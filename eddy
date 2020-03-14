@@ -1,0 +1,6 @@
+#! /usr/bin/env escript
+%%! -noinput -pa ../eddy/_build/default/lib/cecho/ebin ../eddy/_build/default/lib/eddy/ebin
+
+main(_) ->
+    eddy:start().
+
