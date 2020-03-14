@@ -1,0 +1,4 @@
+[{<<"cecho">>,
+  {git,"https://github.com/wallacegibbon/cecho",
+       {ref,"ae0bc063517f74d7e78c89d6cd011fea2532ea89"}},
+  0}].
