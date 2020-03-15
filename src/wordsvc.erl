@@ -14,10 +14,10 @@ translate_alpha(A) when A >= $A, A =< $Z ->
 translate_alpha(A) when A >= $a, A =< $z ->
     translate_by_offset(A - $a).
 
-translate_by_offset(N) when N < 18 -> N div 3 + 2;
-translate_by_offset(N) when N =:= 18 -> 7;
-translate_by_offset(N) when N >= 19, N < 22 -> 8;
-translate_by_offset(_) -> 9.
+translate_by_offset(N) when N < 18 -> $2 + N div 3;
+translate_by_offset(N) when N =:= 18 -> $7;
+translate_by_offset(N) when N >= 19, N < 22 -> $8;
+translate_by_offset(_) -> $9.
 
 fetch_words(<<A:8/integer, R/binary>>, W) when A =/= $\n ->
     fetch_words(R, [A | W]);
@@ -53,12 +53,22 @@ load_words() ->
 
 find_words(Keys, Dict) ->
     Ws = [Word || {KeyList, Word} <- Dict, match_keys(Keys, KeyList)],
-    lists:sort(fun(A, B) -> size(A) =< size(B) end, Ws).
+    if Ws =/= [] ->
+	   prepare_result(Ws);
+       true ->
+	   [Keys]
+    end.
+
+prepare_result(Lst) ->
+    R1 = lists:sort(fun(A, B) -> size(A) =< size(B) end, Lst),
+    R2 = lists:sublist(R1, 10),
+    R = lists:map(fun binary_to_list/1, R2),
+    R.
 
 search_loop(Dict) ->
     receive
-	{query, Pid, KeyList} ->
-	    Pid ! {words, find_words(KeyList, Dict)},
+	{query, Pid, Keys} ->
+	    Pid ! {words, find_words(Keys, Dict)},
 	    search_loop(Dict);
 	stop ->
 	    stopped

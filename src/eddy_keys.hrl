@@ -1,0 +1,3 @@
+-define(NEXTMAP, 100).
+-define(NEXTMODE, 101).
+-define(FN, 102).

@@ -3,42 +3,92 @@
 -export([start/0]).
 
 -include_lib("cecho/include/cecho.hrl").
--define(SPACEKEY, 32).
 
-translate_charlst([C | Rst]) -> case translate_char(C) of
-				    {ok, V} -> [V | translate_charlst(Rst)];
-				    _ -> translate_charlst(Rst)
-				end;
-translate_charlst([]) -> [].
+-include("eddy_keys.hrl").
 
-translate_char(C) ->
-    KeyMap = #{$w => 1, $e => 2, $r => 3, $s => 4, $d => 5, $f => 6,
-	       $x => 7, $c => 8, $v => 9},
-    maps:find(C, KeyMap).
+start_keylistener() ->
+    Pid = self(),
+    spawn_link(fun() -> listen_key(m1, Pid, [], []) end).
 
-try_getword(CList) ->
-    case cecho:getch() of
-	?SPACEKEY ->
-	    case wordsvc:query(lists:reverse(translate_charlst(CList))) of
-		[First | _] ->
-		    cecho:addstr(binary_to_list(First));
-		[] ->
-		    cecho:addstr(io_lib:format("~w", [CList]))
-	    end,
-	    cecho:refresh();
-	C ->
-	    try_getword([C | CList])
+
+listen_key(Mode, Parent, Keys, Options) ->
+    case translate_char(cecho:getch()) of
+	{ok, C} ->
+	    handle_key(Mode, Parent, [C | Keys], Options);
+	error ->
+	    listen_key(Mode, Parent, Keys, Options)
     end.
 
-read_chars() ->
-    handle(cecho:getch()),
-    read_chars().
+handle_key(m1, Parent, [C | _] = Keys, _) when C >= $2, C =< $9 ->
+    Options = wordsvc:query(lists:reverse(Keys)),
+    Parent ! {word_option, Options},
+    listen_key(m1, Parent, Keys, Options);
 
-handle(?SPACEKEY) ->
-    cecho:addch(?SPACEKEY),
-    cecho:refresh();
-handle(C) ->
-    try_getword([C]).
+handle_key(m1, Parent, [$1 | RKeys], [W | Rest]) ->
+    Options = Rest ++ [W],
+    Parent ! {word_option, Options},
+    listen_key(m1, Parent, RKeys, Options);
+
+handle_key(m1, Parent, [$0 | RKeys], Options) ->
+    listen_key(m1, Parent, RKeys, Options);
+
+%% when the word is selected, empty the word list and options
+handle_key(m1, Parent, [C | _], [Word | _]) when C =:= $\s; C =:= $\n ->
+    Parent ! {word_insert, Word},
+    listen_key(m1, Parent, [], []);
+
+%% in any mode, a direct enter or space is self inserting
+handle_key(Mode, Parent, [C], []) when C =:= $\s; C =:= $\n ->
+    Parent ! {word_insert, [C]},
+    listen_key(Mode, Parent, [], []);
+
+handle_key(m1, Parent, [$\b, _ | Keys], _) ->
+    Options = wordsvc:query(lists:reverse(Keys)),
+    Parent ! {word_option, Options},
+    listen_key(m1, Parent, Keys, Options);
+
+handle_key(m1, Parent, [?NEXTMAP | _], _) ->
+    listen_key(m2, Parent, [], []);
+
+handle_key(m2, Parent, [?NEXTMAP | _], _) ->
+    listen_key(m1, Parent, [], []);
+
+handle_key(m2, Parent, [C], []) when C >= $0, C =< $9 ->
+    Parent ! {word_insert, [C]},
+    listen_key(m2, Parent, [], []);
+
+handle_key(m2, Parent, [$\b], []) ->
+    Parent ! delete_char,
+    listen_key(m2, Parent, [], []);
+
+handle_key(Mode, Parent, Keys, Options) ->
+    Parent ! {error, {Mode, Keys, Options}},
+    error.
+
+
+translate_char(C) ->
+    Map = #{$w => $1, $e => $2, $r => $3, $s => $4, $d => $5, $f => $6,
+	    $x => $7, $c => $8, $v => $9, $b => $0, $\s => $\s, $g => $\n,
+	    $t => $\b, $2 => ?NEXTMAP, $3 => ?NEXTMODE, $4 => ?FN},
+    maps:find(C, Map).
+
+
+main_loop() ->
+    receive
+	{word_option, Options} ->
+	    cecho:addstr(io_lib:format("<ops: ~w>", [Options])),
+	    cecho:refresh();
+	{word_insert, Str} ->
+	    %cecho:addstr(io_lib:format("<str: ~w>", [Str])),
+	    cecho:addstr(Str),
+	    cecho:refresh();
+	delete_char ->
+	    todo;
+	{error, I} ->
+	    cecho:addstr(io_lib:format("<err: ~w>", [I])),
+	    cecho:refresh()
+    end,
+    main_loop().
 
 
 start() ->
@@ -48,7 +98,6 @@ start() ->
     %cecho:move(1, 1),
     %{Row, Col} = cecho:getyx(),
     %{MRow, MCol} = cecho:getmaxyx(),
-    read_chars(),
-    %application:stop(cecho),
-    ok.
+    start_keylistener(),
+    main_loop().
 
