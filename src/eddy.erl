@@ -47,6 +47,9 @@ handle_key(m1, Parent, [$\b, _ | Keys], _) ->
     Parent ! {word_option, Options},
     listen_key(m1, Parent, Keys, Options);
 
+handle_key(Mode, Parent, [$\b], _) ->
+    listen_key(Mode, Parent, [], []);
+
 handle_key(m1, Parent, [?NEXTMAP | _], _) ->
     listen_key(m2, Parent, [], []);
 
@@ -73,14 +76,39 @@ translate_char(C) ->
     maps:find(C, Map).
 
 
+spacen(0) -> [];
+spacen(N) -> [$\s | spacen(N - 1)].
+
+clear_nextline() ->
+    {_, MCol} = cecho:getmaxyx(),
+    {Row, Col} = cecho:getyx(),
+    cecho:move(Row + 1, 0),
+    cecho:addstr(spacen(MCol)),
+    cecho:move(Row + 2, 0),
+    cecho:addstr(spacen(MCol)),
+    cecho:move(Row, Col).
+
+draw_options([Word | RestOptions]) ->
+    {MRow, MCol} = cecho:getmaxyx(),
+    {Row, Col} = cecho:getyx(),
+    cecho:addstr(spacen(MCol - Col)),
+    cecho:move(Row, Col),
+    cecho:addstr(Word),
+    clear_nextline(),
+    cecho:move(Row + 1, Col),
+    cecho:addstr(string:join(RestOptions, " ")),
+    cecho:move(Row, Col).
+
 main_loop() ->
     receive
 	{word_option, Options} ->
-	    cecho:addstr(io_lib:format("<ops: ~w>", [Options])),
+	    %cecho:addstr(io_lib:format("<ops: ~w>", [Options])),
+	    draw_options(Options),
 	    cecho:refresh();
 	{word_insert, Str} ->
 	    %cecho:addstr(io_lib:format("<str: ~w>", [Str])),
 	    cecho:addstr(Str),
+	    clear_nextline(),
 	    cecho:refresh();
 	delete_char ->
 	    todo;
@@ -95,9 +123,6 @@ start() ->
     wordsvc:start_link(),
     application:start(cecho),
     ok = cecho:noecho(),
-    %cecho:move(1, 1),
-    %{Row, Col} = cecho:getyx(),
-    %{MRow, MCol} = cecho:getmaxyx(),
     start_keylistener(),
     main_loop().
 
