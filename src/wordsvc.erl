@@ -49,15 +49,21 @@ match_keys([], _) -> true.
 
 load_words() ->
     {ok, Stream} = file:read_file(?WORDS_FILE),
-    translate_words(Stream, []).
+    Dict = translate_words(Stream, []),
+    %ok = file:write_file("/tmp/ttt", io_lib:format("~p", [Dict])),
+    Dict.
 
-find_words(Keys, Dict) ->
+
+find_words([_ | _] = Keys, Dict) ->
     Ws = [Word || {KeyList, Word} <- Dict, match_keys(Keys, KeyList)],
     if Ws =/= [] ->
 	   prepare_result(Ws);
        true ->
 	   [Keys]
-    end.
+    end;
+
+find_words([], _) ->
+    [].
 
 prepare_result(Lst) ->
     R1 = lists:sort(fun(A, B) -> size(A) =< size(B) end, Lst),

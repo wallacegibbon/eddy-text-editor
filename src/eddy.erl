@@ -29,6 +29,9 @@ handle_key(m1, Parent, [$1 | RKeys], [W | Rest]) ->
     Parent ! {word_option, Options},
     listen_key(m1, Parent, RKeys, Options);
 
+handle_key(m1, Parent, [$1], []) ->
+    listen_key(m1, Parent, [], []);
+
 handle_key(m1, Parent, [$0 | RKeys], Options) ->
     listen_key(m1, Parent, RKeys, Options);
 
@@ -88,16 +91,25 @@ clear_nextline() ->
     cecho:addstr(spacen(MCol)),
     cecho:move(Row, Col).
 
-draw_options([Word | RestOptions]) ->
-    {MRow, MCol} = cecho:getmaxyx(),
+clear_rest_chars() ->
+    {_, MCol} = cecho:getmaxyx(),
     {Row, Col} = cecho:getyx(),
     cecho:addstr(spacen(MCol - Col)),
-    cecho:move(Row, Col),
-    cecho:addstr(Word),
+    cecho:move(Row, Col).
+
+draw_options([Word | RestOptions]) ->
+    clear_rest_chars(),
     clear_nextline(),
+    {Row, Col} = cecho:getyx(),
+    cecho:addstr(Word),
     cecho:move(Row + 1, Col),
     cecho:addstr(string:join(RestOptions, " ")),
-    cecho:move(Row, Col).
+    cecho:move(Row, Col);
+
+draw_options([]) ->
+    clear_rest_chars(),
+    clear_nextline().
+
 
 main_loop() ->
     receive
