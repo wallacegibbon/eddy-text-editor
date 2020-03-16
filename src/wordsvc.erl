@@ -66,7 +66,7 @@ find_words([], _) ->
     [].
 
 prepare_result(Lst) ->
-    R1 = lists:sort(fun(A, B) when size(A) =/= size(B) -> size(A) < size(B);
+    R1 = lists:sort(fun(A, B) when size(A) =/= size(B) -> size(A) =< size(B);
 		       (A, B) -> A =< B
 		    end, Lst),
     R2 = lists:sublist(R1, 10),
