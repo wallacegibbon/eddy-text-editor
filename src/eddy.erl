@@ -72,6 +72,7 @@ handle_key(chmap, Parent, [N, ?MAPCHANGE], _) when N >= $1, N =< $9 ->
     listen_key({sym, N - $0}, Parent, [], []);
 
 handle_key(chmap, Parent, [_, ?MAPCHANGE], _) ->
+    Parent ! {word_option, []},
     listen_key(normal, Parent, [], []);
 
 %% direct key maps
@@ -113,7 +114,10 @@ get_symmap(4) ->
       $7 => $~, $8 => $%, $9 => $$, $0 => $&};
 
 get_symmap(5) ->
-    #{$1 => $?, $2 => $`}.
+    #{$1 => $?, $2 => $`};
+
+get_symmap(_) ->
+    #{}.
 
 
 char_to_lower(C) when C >= $A, C =< $Z -> C + ($a - $A);
