@@ -76,8 +76,10 @@ translate_char(C) ->
     Map = #{$w => $1, $e => $2, $r => $3, $s => $4, $d => $5, $f => $6,
 	    $x => $7, $c => $8, $v => $9, $b => $0, $\s => $\s, $g => $\n,
 	    $t => $\b, $2 => ?NEXTMAP, $3 => ?NEXTMODE, $4 => ?FN},
-    maps:find(C, Map).
+    maps:find(char_to_lower(C), Map).
 
+char_to_lower(C) when C >= $A, C =< $Z -> C + ($a - $A);
+char_to_lower(C) -> C.
 
 spacen(0) -> [];
 spacen(N) -> [$\s | spacen(N - 1)].
