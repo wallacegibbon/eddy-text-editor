@@ -1,3 +1,3 @@
--define(NEXTMAP, 100).
--define(NEXTMODE, 101).
+-define(MAPCHANGE, 100).
+-define(MODECHANGE, 101).
 -define(FN, 102).
