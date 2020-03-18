@@ -4160,6 +4160,7 @@ avowed
 avowedly
 avowing
 avows
+avr
 avuncular
 await
 awaited
@@ -21585,6 +21586,7 @@ equivocating
 equivocation
 equivocations
 equuleus
+er
 era
 eradicate
 eradicated
@@ -26807,6 +26809,7 @@ gish
 gismo
 gismos
 gist
+git
 github
 giuliani
 giuseppe
@@ -27190,6 +27193,7 @@ goiters
 goitre
 goitres
 golan
+golang
 golconda
 gold
 golda
@@ -30434,6 +30438,7 @@ hotness
 hotpoint
 hotshot
 hotshots
+hotspot
 hottentot
 hotter
 hottest
@@ -32986,6 +32991,7 @@ intelligentsia
 intelligibility
 intelligible
 intelligibly
+intellij
 intelsat
 intemperance
 intemperate
@@ -34664,6 +34670,7 @@ juxtaposes
 juxtaposing
 juxtaposition
 juxtapositions
+jvm
 k
 kaaba
 kabob
@@ -36189,6 +36196,7 @@ leeuwenhoek
 leeward
 leewards
 leeway
+leex
 left
 lefter
 leftest
@@ -36489,6 +36497,8 @@ lewdly
 lewdness
 lewinsky
 lewis
+lex
+lexer
 lexica
 lexical
 lexicographer
@@ -36936,6 +36946,7 @@ lisbon
 lisle
 lisp
 lisped
+lisper
 lisping
 lisps
 lissajous
@@ -39153,6 +39164,8 @@ mcnaughton
 mcneil
 mcpherson
 mcqueen
+mcs
+mcu
 mcveigh
 md
 me
@@ -39408,6 +39421,7 @@ melts
 melva
 melville
 melvin
+mem
 member
 members
 membership
@@ -39835,6 +39849,7 @@ microchips
 microcode
 microcomputer
 microcomputers
+microcontroller
 microcosm
 microcosms
 microeconomics
@@ -40323,6 +40338,7 @@ misbehaved
 misbehaves
 misbehaving
 misbehavior
+misc
 miscalculate
 miscalculated
 miscalculates
@@ -47142,6 +47158,7 @@ pianos
 piazza
 piazzas
 piazze
+pic
 pica
 picante
 picaresque
@@ -48776,6 +48793,7 @@ prayer
 prayers
 praying
 prays
+pre
 preach
 preached
 preacher
@@ -50951,6 +50969,7 @@ quoiting
 quoits
 quondam
 quonset
+quora
 quorum
 quorums
 quota
@@ -70693,6 +70712,7 @@ whatchamacallits
 whatever
 whatnot
 whats
+whatsapp
 whatsoever
 wheal
 wheals
@@ -71958,6 +71978,7 @@ yeastiest
 yeasts
 yeasty
 yeats
+yecc
 yekaterinburg
 yell
 yelled
