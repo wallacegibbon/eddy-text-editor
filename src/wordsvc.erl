@@ -5,10 +5,8 @@
 -define(WORDS_FILE, "./words.txt").
 -define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
 
-translate_word([A | Rest]) ->
-    [translate_alpha(A) | translate_word(Rest)];
-translate_word([]) ->
-    [].
+translate_word([A | Rest]) -> [translate_alpha(A) | translate_word(Rest)];
+translate_word([]) -> [].
 
 translate_alpha(A) when A >= $A, A =< $Z ->
     translate_by_offset(A - $A);
@@ -51,19 +49,19 @@ match_keys([], _) -> true.
 load_words() ->
     {ok, Stream} = file:read_file(?WORDS_FILE),
     Dict = translate_words(Stream, []),
-    {ok, [Frequency]} = file:consult(?FREQUENCY_FILE),
-    {Dict, Frequency}.
+    {ok, [FreqMap]} = file:consult(?FREQUENCY_FILE),
+    {Dict, FreqMap}.
 
-dump_frequency(Frequency) ->
+dump_frequency(FreqMap) ->
     {ok, F} = file:open(?FREQUENCY_FILE, write),
-    io:format(F, "~p.", [Frequency]),
+    io:format(F, "~p.", [FreqMap]),
     ok = file:close(F).
 
 
-find_words([_ | _] = Keys, Dict, Frequency) ->
+find_words([_ | _] = Keys, Dict, FreqMap) ->
     Ws = [Word || {KeyList, Word} <- Dict, match_keys(Keys, KeyList)],
     if Ws =/= [] ->
-	   prepare_result(Ws, Frequency);
+	   prepare_result(Ws, FreqMap);
        true ->
 	   [Keys]
     end;
@@ -71,50 +69,36 @@ find_words([_ | _] = Keys, Dict, Frequency) ->
 find_words([], _, _) ->
     [].
 
-prepare_result(Lst, Frequency) ->
+prepare_result(Lst, FreqMap) ->
     R1 = lists:sort(fun(A, B) when size(A) =/= size(B) -> size(A) =< size(B);
 		       (_, _) -> true
 		    end, Lst),
     R2 = lists:sublist(R1, 10),
     R3 = lists:sort(fun(A, B) when size(A) =:= size(B) ->
-			    frequency_compare(A, B, Frequency);
+			    freqcmp(A, B, FreqMap);
 		       (_, _) -> true
 		    end, R2),
     R4 = lists:map(fun binary_to_list/1, R3),
     R4.
 
-frequency_compare(Word1, Word2, Frequency) ->
-    A = case maps:find(Word1, Frequency) of
-	    {ok, Cnt1} -> Cnt1;
-	    error -> 0
-	end,
-    B = case maps:find(Word2, Frequency) of
-	    {ok, Cnt2} -> Cnt2;
-	    error -> 0
-	end,
-    A > B.
+freqcmp(Word1, Word2, FreqMap) ->
+    maps:get(Word1, FreqMap, 0) > maps:get(Word2, FreqMap, 0).
 
-search_loop({Dict, Frequency}) ->
+
+search_loop({Dict, FreqMap}) ->
     receive
 	{query, Pid, Keys} ->
-	    Pid ! {words, find_words(Keys, Dict, Frequency)},
-	    search_loop({Dict, Frequency});
-
+	    Pid ! {words, find_words(Keys, Dict, FreqMap)},
+	    search_loop({Dict, FreqMap});
 	{use, Word} ->
-	    W = list_to_binary(Word),
-	    case maps:find(W, Frequency) of
-		{ok, Cnt} ->
-		    search_loop({Dict, Frequency#{W := Cnt + 1}});
-		error ->
-		    search_loop({Dict, Frequency#{W => 1}})
-	    end;
-
+	    NewFreq = maps:update_with(list_to_binary(Word),
+				       fun(V) -> V + 1 end, 1, FreqMap),
+	    search_loop({Dict, NewFreq});
 	stop ->
 	    stopped
-
     after 20000 ->
-	dump_frequency(Frequency),
-	search_loop({Dict, Frequency})
+	dump_frequency(FreqMap),
+	search_loop({Dict, FreqMap})
     end.
 
 start_link() ->
