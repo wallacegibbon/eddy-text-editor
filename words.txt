@@ -12224,6 +12224,7 @@ columned
 columnist
 columnists
 columns
+com
 coma
 comanche
 comanches
@@ -44152,6 +44153,7 @@ oregonians
 oreo
 ores
 orestes
+org
 organ
 organdie
 organdy
