@@ -39,6 +39,7 @@ handle_key(normal, Parent, [$0 | RKeys], Options) ->
 %% when the word is selected, empty the word list and options
 handle_key(normal, Parent, [C | _], [Word | _]) when C =:= $\s; C =:= $\n ->
     Parent ! {word_insert, Word},
+    wordsvc:freqcount(Word),
     listen_key(normal, Parent, [], []);
 
 %% in any mode, a direct enter or space is self inserting
