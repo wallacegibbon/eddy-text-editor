@@ -14415,6 +14415,8 @@ cozily
 coziness
 cozumel
 cozy
+cp
+cpp
 cr
 crab
 crabbe
@@ -15810,6 +15812,7 @@ dazzle
 dazzled
 dazzles
 dazzling
+dc
 db
 deacon
 deaconess
@@ -17287,6 +17290,7 @@ detrimental
 detriments
 detritus
 detroit
+dets
 deuce
 deuces
 deuterium
@@ -21639,6 +21643,7 @@ erika
 erin
 eris
 eritrea
+erl
 erlang
 erlenmeyer
 erma
@@ -21873,6 +21878,7 @@ etna
 eton
 etruria
 etruscan
+ets
 etta
 étude
 études
@@ -25280,6 +25286,7 @@ freebie
 freebies
 freebooter
 freebooters
+freebsd
 freed
 freedman
 freedmen
@@ -30531,6 +30538,8 @@ howls
 hows
 howsoever
 hoyle
+hpp
+hrl
 hrothgar
 hsbc
 huang
@@ -40680,6 +40689,7 @@ mn
 mnemonic
 mnemonics
 mnemosyne
+mnesia
 mo
 moan
 moaned
@@ -41881,6 +41891,8 @@ muzzle
 muzzled
 muzzles
 muzzling
+mv
+mvn
 my
 myanmar
 mycenae
@@ -42213,6 +42225,7 @@ naziisms
 nazis
 nazism
 nazisms
+ncurses
 nd
 ndjamena
 ne
@@ -43961,6 +43974,7 @@ opaquest
 opaquing
 opel
 open
+openbsd
 opened
 opener
 openers
@@ -43972,6 +43986,7 @@ openly
 openness
 openoffice
 opens
+openssl
 openwork
 opera
 operable
@@ -48559,6 +48574,7 @@ posterity
 posters
 postgraduate
 postgraduates
+postgre
 postgresql
 posthaste
 posthumous
@@ -50601,6 +50617,7 @@ pwn
 pwned
 pwning
 pwns
+py
 pygmalion
 pygmies
 pygmy
@@ -54321,6 +54338,7 @@ rivulet
 rivulets
 riyadh
 rizal
+rm
 rn
 roach
 roaches
@@ -70682,6 +70700,7 @@ wettest
 wetting
 weyden
 wezen
+wget
 whack
 whacked
 whackier
@@ -71870,6 +71889,7 @@ xiongnu
 xmas
 xmases
 xochipilli
+xrl
 xuzhou
 xylem
 xylophone
@@ -72117,6 +72137,7 @@ yowling
 yowls
 ypres
 ypsilanti
+yrl
 yttrium
 yuan
 yucatan
