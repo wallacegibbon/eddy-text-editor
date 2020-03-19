@@ -2,147 +2,145 @@
 
 -export([start/0]).
 
--include_lib("cecho/include/cecho.hrl").
+-define(COMMANDS, #{"22" => complete, "11" => capitalize, "12" => upper,
+		    "13" => lower, "14" => join1, "16" => join2,
+		    "33" => undo, "32" => redo, "66" => find, "88" => select,
+		    "77" => cut, "78" => copy, "79" => paste,
+		    "44" => save, "55" => quit, "45" => savequit}).
 
--include("eddy_keys.hrl").
+-define(BASICMAP, #{$w => $1, $e => $2, $r => $3, $s => $4, $d => $5,
+		    $f => $6, $x => $7, $c => $8, $v => $9, $b => $0,
+		    $\s => $\s, $g => $\n, $t => $\b,
+		    $3 => chmap, $2 => chmod, $4 => fn}).
+
+-define(SYM1, #{$1 => $1, $2 => $2, $3 => $3, $4 => $4, $5 => $5,
+		$6 => $6, $7 => $7, $8 => $8, $9 => $9, $0 => $0}).
+
+-define(SYM2, #{$1 => $[, $3 => $], $4 => $(, $6 => $), $7 => ${,
+		$9 => $}, $2 => $", $5 => $', $8 => $., $0 => $,}).
+
+-define(SYM3, #{$1 => $\\, $2 => $|, $3 => $/, $4 => $<, $5 => $=,
+		$6 => $>, $7 => $^, $8 => $!, $9 => $:, $0 => $;}).
+
+-define(SYM4, #{$1 => $+, $2 => $-, $3 => $*, $4 => $@, $5 => $_,
+		$6 => $#, $7 => $~, $8 => $%, $9 => $$, $0 => $&}).
+
+-define(SYM5, #{$1 => $?, $2 => $`}).
+
 
 start_keylistener() ->
     Pid = self(),
     spawn_link(fun() -> listen_key(normal, Pid, [], []) end).
 
 
-listen_key(Mode, Parent, Keys, Options) ->
-    case translatekey_pre(cecho:getch()) of
+listen_key(Mode, Pid, Keys, Arguments) ->
+    case pretranslate(cecho:getch()) of
 	{ok, C} ->
-	    handle_key(Mode, Parent, [C | Keys], Options);
+	    handle_key(Mode, Pid, [C | Keys], Arguments);
 	error ->
-	    listen_key(Mode, Parent, Keys, Options)
+	    listen_key(Mode, Pid, Keys, Arguments)
     end.
 
 %% back to normal with double click on MAPCHANGE
-handle_key(chmap, Parent, [?MAPCHANGE, ?MAPCHANGE], _) ->
-    Parent ! {word_option, []},
-    listen_key(normal, Parent, [], []);
+handle_key(chmap, Pid, [chmap, chmap], _) ->
+    Pid ! {word_option, []},
+    listen_key(normal, Pid, [], []);
 
 %% prepare map selection
-handle_key(_, Parent, [?MAPCHANGE | _], _) ->
-    listen_key(chmap, Parent, [?MAPCHANGE], []);
+handle_key(_, Pid, [chmap | _], _) ->
+    listen_key(chmap, Pid, [chmap], []);
 
-handle_key(chmap, Parent, [N, ?MAPCHANGE], _) when N >= $1, N =< $9 ->
-    Parent ! {word_option, []},
-    listen_key({sym, N - $0}, Parent, [], []);
+handle_key(chmap, Pid, [N, chmap], _) when N >= $1, N =< $9 ->
+    Pid ! {word_option, []},
+    listen_key({sym, N - $0}, Pid, [], []);
 
-handle_key(chmap, Parent, [_, ?MAPCHANGE], _) ->
-    Parent ! {word_option, []},
-    listen_key(normal, Parent, [], []);
+handle_key(chmap, Pid, [_, chmap], _) ->
+    Pid ! {word_option, []},
+    listen_key(normal, Pid, [], []);
 
 %% command mode
-handle_key(waitcmd1, Parent, [?FN, ?FN], OldMode) ->
-    listen_key(waitcmd1, Parent, [?FN], OldMode);
+handle_key(waitcmd1, Pid, [fn, fn], OldMode) ->
+    listen_key(waitcmd1, Pid, [fn], OldMode);
 
-handle_key(Mode, Parent, [?FN | _], _) ->
-    listen_key(waitcmd1, Parent, [?FN], Mode);
+handle_key(Mode, Pid, [fn | _], _) ->
+    listen_key(waitcmd1, Pid, [fn], Mode);
 
-handle_key(waitcmd1, Parent, [A, ?FN], OldMode) ->
-    listen_key(waitcmd2, Parent, [A, ?FN], OldMode);
+handle_key(waitcmd1, Pid, [A, fn], OldMode) ->
+    listen_key(waitcmd2, Pid, [A, fn], OldMode);
 
 %% this is where this process may exit
-handle_key(waitcmd2, Parent, [B, A, ?FN], OldMode) ->
-    case translate_command(A, B) of
+handle_key(waitcmd2, Pid, [B, A, fn], OldMode) ->
+    case translatecmd(A, B) of
 	Quit when Quit =:= quit; Quit =:= savequit ->
-	    Parent ! stop;
+	    Pid ! stop;
 	Cmd ->
-	    Parent ! {cmd, Cmd},
-	    listen_key(OldMode, Parent, [], [])
+	    Pid ! {cmd, Cmd},
+	    listen_key(OldMode, Pid, [], [])
     end;
 
 %% T9 input method
-handle_key(normal, Parent, [C | _] = Keys, _) when C >= $2, C =< $9 ->
+handle_key(normal, Pid, [C | _] = Keys, _) when C >= $2, C =< $9 ->
     Options = wordsvc:query(lists:reverse(Keys)),
-    Parent ! {word_option, Options},
-    listen_key(normal, Parent, Keys, Options);
+    Pid ! {word_option, Options},
+    listen_key(normal, Pid, Keys, Options);
 
-handle_key(normal, Parent, [$1 | RKeys], [W | Rest]) ->
+handle_key(normal, Pid, [$1 | RKeys], [W | Rest]) ->
     Options = Rest ++ [W],
-    Parent ! {word_option, Options},
-    listen_key(normal, Parent, RKeys, Options);
+    Pid ! {word_option, Options},
+    listen_key(normal, Pid, RKeys, Options);
 
-handle_key(normal, Parent, [$1], []) ->
-    listen_key(normal, Parent, [], []);
+handle_key(normal, Pid, [$1], []) ->
+    listen_key(normal, Pid, [], []);
 
-handle_key(normal, Parent, [$0 | RKeys], Options) ->
-    listen_key(normal, Parent, RKeys, Options);
+handle_key(normal, Pid, [$0 | RKeys], Options) ->
+    listen_key(normal, Pid, RKeys, Options);
 
 %% when the word is selected, empty the word list and options
-handle_key(normal, Parent, [C | _], [Word | _]) when C =:= $\s; C =:= $\n ->
-    Parent ! {word_insert, Word},
+handle_key(normal, Pid, [C | _], [Word | _]) when C =:= $\s; C =:= $\n ->
+    Pid ! {word_insert, Word},
     wordsvc:freqcount(Word),
-    listen_key(normal, Parent, [], []);
+    listen_key(normal, Pid, [], []);
 
 %% in any mode, a direct enter or space is self inserting
-handle_key(Mode, Parent, [C], []) when C =:= $\s; C =:= $\n ->
-    Parent ! {word_insert, [C]},
-    listen_key(Mode, Parent, [], []);
+handle_key(Mode, Pid, [C], []) when C =:= $\s; C =:= $\n ->
+    Pid ! {word_insert, [C]},
+    listen_key(Mode, Pid, [], []);
 
-handle_key(normal, Parent, [$\b, _ | Keys], _) ->
+handle_key(normal, Pid, [$\b, _ | Keys], _) ->
     Options = wordsvc:query(lists:reverse(Keys)),
-    Parent ! {word_option, Options},
-    listen_key(normal, Parent, Keys, Options);
+    Pid ! {word_option, Options},
+    listen_key(normal, Pid, Keys, Options);
 
-handle_key(normal, Parent, [$\b], _) ->
-    listen_key(normal, Parent, [], []);
+handle_key(normal, Pid, [$\b], _) ->
+    listen_key(normal, Pid, [], []);
 
-handle_key(Mode, Parent, [$\b], []) when Mode =/= normal ->
-    Parent ! delete_char,
-    listen_key(Mode, Parent, [], []);
+handle_key(Mode, Pid, [$\b], []) when Mode =/= normal ->
+    Pid ! delete_char,
+    listen_key(Mode, Pid, [], []);
 
 %% direct key maps
-handle_key({sym, N} = Mode, Parent, [C], []) ->
-    Parent ! {word_insert, [maps:get(C, get_symmap(N), $\s)]},
-    listen_key(Mode, Parent, [], []);
+handle_key({sym, N} = Mode, Pid, [C], []) ->
+    Pid ! {word_insert, [translatesym(C, N)]},
+    listen_key(Mode, Pid, [], []);
 
 %% there should not be any situation left
-handle_key(Mode, Parent, Keys, Options) ->
-    Parent ! {error, {Mode, Keys, Options}},
-    listen_key(Mode, Parent, [], []).
+handle_key(Mode, Pid, Keys, Options) ->
+    Pid ! {error, {Mode, Keys, Options}},
+    listen_key(Mode, Pid, [], []).
 
 
-translate_command(Key1, Key2) ->
-    Cmd = #{"22" => complete, "11" => capitalize, "12" => upper, "13" => lower,
-	    "14" => join1, "16" => join2,
-	    "33" => undo, "32" => redo,
-	    "66" => find, "88" => select,
-	    "77" => cut, "78" => copy, "79" => paste,
-	    "44" => save, "55" => quit, "45" => savequit},
-    maps:get([Key1, Key2], Cmd, unknown).
+translatecmd(Key1, Key2) -> maps:get([Key1, Key2], ?COMMANDS, unknown).
 
-translatekey_pre(C) ->
-    Pre = #{$w => $1, $e => $2, $r => $3, $s => $4, $d => $5, $f => $6,
-	    $x => $7, $c => $8, $v => $9, $b => $0, $\s => $\s, $g => $\n,
-	    $t => $\b, $3 => ?MAPCHANGE, $2 => ?MODECHANGE, $4 => ?FN},
-    maps:find(char_to_lower(C), Pre).
+pretranslate(C) -> maps:find(char_to_lower(C), ?BASICMAP).
 
-get_symmap(1) ->
-    #{$1 => $1, $2 => $2, $3 => $3, $4 => $4, $5 => $5, $6 => $6,
-      $7 => $7, $8 => $8, $9 => $9, $0 => $0};
+translatesym(Key, N) -> maps:get(Key, get_symmap(N), $\s).
 
-get_symmap(2) ->
-    #{$1 => $[, $3 => $], $4 => $(, $6 => $), $7 => ${, $9 => $},
-      $2 => $", $5 => $', $8 => $., $0 => $,};
-
-get_symmap(3) ->
-    #{$1 => $\\, $2 => $|, $3 => $/, $4 => $<, $5 => $=, $6 => $>,
-      $7 => $^, $8 => $!, $9 => $:, $0 => $;};
-
-get_symmap(4) ->
-    #{$1 => $+, $2 => $-, $3 => $*, $4 => $@, $5 => $_, $6 => $#,
-      $7 => $~, $8 => $%, $9 => $$, $0 => $&};
-
-get_symmap(5) ->
-    #{$1 => $?, $2 => $`};
-
-get_symmap(_) ->
-    #{}.
+get_symmap(1) -> ?SYM1;
+get_symmap(2) -> ?SYM2;
+get_symmap(3) -> ?SYM3;
+get_symmap(4) -> ?SYM4;
+get_symmap(5) -> ?SYM5;
+get_symmap(_) -> #{}.
 
 
 char_to_lower(C) when C >= $A, C =< $Z -> C + ($a - $A);
