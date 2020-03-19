@@ -46,6 +46,7 @@ handle_key(Mode, Parent, [?FN | _], _) ->
 handle_key(waitcmd1, Parent, [A, ?FN], OldMode) ->
     listen_key(waitcmd2, Parent, [A, ?FN], OldMode);
 
+%% this is where this process may exit
 handle_key(waitcmd2, Parent, [B, A, ?FN], OldMode) ->
     case translate_command(A, B) of
 	Quit when Quit =:= quit; Quit =:= savequit ->

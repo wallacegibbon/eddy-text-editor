@@ -2734,6 +2734,8 @@ apothecaries
 apothecary
 apotheoses
 apotheosis
+app
+apps
 appal
 appalachia
 appalachian
@@ -30548,6 +30550,8 @@ hpp
 hrl
 hrothgar
 hsbc
+htm
+html
 huang
 hub
 hubbard
@@ -69375,6 +69379,7 @@ vexatious
 vexed
 vexes
 vexing
+vi
 via
 viability
 viable
