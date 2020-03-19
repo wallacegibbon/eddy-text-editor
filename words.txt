@@ -2378,6 +2378,7 @@ annihilators
 anniversaries
 anniversary
 annmarie
+anno
 annotate
 annotated
 annotates
@@ -20059,6 +20060,7 @@ eclipsed
 eclipses
 eclipsing
 ecliptic
+ecma
 ecmascript
 eco
 ecological
@@ -21689,6 +21691,7 @@ ersatz
 ersatzes
 erse
 erstwhile
+erts
 erudite
 eruditely
 erudition
@@ -25607,6 +25610,7 @@ fryer
 fryers
 frying
 fsf
+fsm
 fuchs
 fuchsia
 fuchsias
@@ -26325,6 +26329,7 @@ gazillion
 gazillions
 gazing
 gazpacho
+gb
 gd
 gdansk
 ge
@@ -26384,6 +26389,7 @@ geminis
 gems
 gemstone
 gemstones
+gen
 gena
 genaro
 gendarme
@@ -34486,6 +34492,7 @@ joyrode
 joys
 joystick
 joysticks
+js
 juan
 juana
 juanita
@@ -37567,6 +37574,7 @@ loyola
 lozenge
 lozenges
 ls
+lua
 luanda
 luann
 luau
@@ -40286,6 +40294,7 @@ minuting
 minx
 minxes
 miocene
+mips
 mir
 mira
 mirabeau
@@ -44149,6 +44158,7 @@ orchestrations
 orchid
 orchids
 orcs
+ord
 ordain
 ordained
 ordaining
@@ -44370,6 +44380,7 @@ otherwise
 otherworldly
 otiose
 otis
+otp
 ottawa
 ottawas
 otter
@@ -49509,6 +49520,7 @@ problems
 proboscides
 proboscis
 proboscises
+proc
 procedural
 procedure
 procedures
@@ -51549,6 +51561,7 @@ razz
 razzed
 razzes
 razzing
+rb
 rca
 rds
 re
@@ -52484,6 +52497,7 @@ refute
 refuted
 refutes
 refuting
+reg
 regain
 regained
 regaining
@@ -56122,6 +56136,7 @@ scissor
 scissors
 sclerosis
 sclerotic
+scm
 scoff
 scoffed
 scoffing
@@ -61113,6 +61128,7 @@ statelier
 stateliest
 stateliness
 stately
+statem
 statement
 statements
 staten
@@ -61659,6 +61675,7 @@ stowe
 stowed
 stowing
 stows
+str
 strabo
 straddle
 straddled
@@ -63445,6 +63462,7 @@ syringing
 syrup
 syrups
 syrupy
+sys
 system
 systematic
 systematically
@@ -65932,6 +65950,7 @@ tranquillizers
 tranquillizes
 tranquillizing
 tranquilly
+trans
 transact
 transacted
 transacting
@@ -66804,6 +66823,8 @@ tunnies
 tunny
 tuns
 tupi
+tuple
+tuples
 tupperware
 tupungato
 turban
@@ -68756,6 +68777,8 @@ uteri
 uterine
 uterus
 uteruses
+utf
+util
 utilitarian
 utilitarianism
 utilitarians
@@ -68766,6 +68789,7 @@ utilize
 utilized
 utilizes
 utilizing
+utils
 utmost
 utopia
 utopian
