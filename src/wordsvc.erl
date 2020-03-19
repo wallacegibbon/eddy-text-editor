@@ -94,11 +94,9 @@ search_loop({Dict, FreqMap}) ->
 	    NewFreq = maps:update_with(list_to_binary(Word),
 				       fun(V) -> V + 1 end, 1, FreqMap),
 	    search_loop({Dict, NewFreq});
-	stop ->
-	    stopped
-    after 20000 ->
-	dump_frequency(FreqMap),
-	search_loop({Dict, FreqMap})
+	{stop, Pid} ->
+	    dump_frequency(FreqMap),
+	    Pid ! {wordsvc, stopped}
     end.
 
 start_link() ->
@@ -116,6 +114,10 @@ freqcount(Word) ->
     wordsvc ! {use, Word}.
 
 stop() ->
-    wordsvc ! stop.
+    wordsvc ! {stop, self()},
+    receive
+	{wordsvc, stopped} ->
+	    stopped
+    end.
 
 

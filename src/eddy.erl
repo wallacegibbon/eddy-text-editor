@@ -12,12 +12,48 @@ start_keylistener() ->
 
 
 listen_key(Mode, Parent, Keys, Options) ->
-    case pre_translate(cecho:getch()) of
+    case translatekey_pre(cecho:getch()) of
 	{ok, C} ->
 	    handle_key(Mode, Parent, [C | Keys], Options);
 	error ->
 	    listen_key(Mode, Parent, Keys, Options)
     end.
+
+%% back to normal with double click on MAPCHANGE
+handle_key(chmap, Parent, [?MAPCHANGE, ?MAPCHANGE], _) ->
+    Parent ! {word_option, []},
+    listen_key(normal, Parent, [], []);
+
+%% prepare map selection
+handle_key(_, Parent, [?MAPCHANGE | _], _) ->
+    listen_key(chmap, Parent, [?MAPCHANGE], []);
+
+handle_key(chmap, Parent, [N, ?MAPCHANGE], _) when N >= $1, N =< $9 ->
+    Parent ! {word_option, []},
+    listen_key({sym, N - $0}, Parent, [], []);
+
+handle_key(chmap, Parent, [_, ?MAPCHANGE], _) ->
+    Parent ! {word_option, []},
+    listen_key(normal, Parent, [], []);
+
+%% command mode
+handle_key(waitcmd1, Parent, [?FN, ?FN], OldMode) ->
+    listen_key(waitcmd1, Parent, [?FN], OldMode);
+
+handle_key(Mode, Parent, [?FN | _], _) ->
+    listen_key(waitcmd1, Parent, [?FN], Mode);
+
+handle_key(waitcmd1, Parent, [A, ?FN], OldMode) ->
+    listen_key(waitcmd2, Parent, [A, ?FN], OldMode);
+
+handle_key(waitcmd2, Parent, [B, A, ?FN], OldMode) ->
+    case translate_command(A, B) of
+	Quit when Quit =:= quit; Quit =:= savequit ->
+	    Parent ! stop;
+	Cmd ->
+	    Parent ! {cmd, Cmd},
+	    listen_key(OldMode, Parent, [], [])
+    end;
 
 %% T9 input method
 handle_key(normal, Parent, [C | _] = Keys, _) when C >= $2, C =< $9 ->
@@ -59,40 +95,27 @@ handle_key(Mode, Parent, [$\b], []) when Mode =/= normal ->
     Parent ! delete_char,
     listen_key(Mode, Parent, [], []);
 
-%% back to normal with double click on MAPCHANGE
-handle_key(chmap, Parent, [?MAPCHANGE, ?MAPCHANGE], _) ->
-    Parent ! {word_option, []},
-    listen_key(normal, Parent, [], []);
-
-%% prepare map selection
-handle_key(Mode, Parent, [?MAPCHANGE | _], _) when Mode =/= move ->
-    listen_key(chmap, Parent, [?MAPCHANGE], []);
-
-handle_key(chmap, Parent, [N, ?MAPCHANGE], _) when N >= $1, N =< $9 ->
-    Parent ! {word_option, []},
-    listen_key({sym, N - $0}, Parent, [], []);
-
-handle_key(chmap, Parent, [_, ?MAPCHANGE], _) ->
-    Parent ! {word_option, []},
-    listen_key(normal, Parent, [], []);
-
 %% direct key maps
-handle_key({sym, N} = Type, Parent, [C], []) ->
-    case maps:find(C, get_symmap(N)) of
-	{ok, V} ->
-	    Parent ! {word_insert, [V]};
-	error ->
-	    ignore
-    end,
-    listen_key(Type, Parent, [], []);
+handle_key({sym, N} = Mode, Parent, [C], []) ->
+    Parent ! {word_insert, [maps:get(C, get_symmap(N), $\s)]},
+    listen_key(Mode, Parent, [], []);
 
 %% there should not be any situation left
 handle_key(Mode, Parent, Keys, Options) ->
     Parent ! {error, {Mode, Keys, Options}},
-    error.
+    listen_key(Mode, Parent, [], []).
 
 
-pre_translate(C) ->
+translate_command(Key1, Key2) ->
+    Cmd = #{"22" => complete, "11" => capitalize, "12" => upper, "13" => lower,
+	    "14" => join1, "16" => join2,
+	    "33" => undo, "32" => redo,
+	    "66" => find, "88" => select,
+	    "77" => cut, "78" => copy, "79" => paste,
+	    "44" => save, "55" => quit, "45" => savequit},
+    maps:get([Key1, Key2], Cmd, unknown).
+
+translatekey_pre(C) ->
     Pre = #{$w => $1, $e => $2, $r => $3, $s => $4, $d => $5, $f => $6,
 	    $x => $7, $c => $8, $v => $9, $b => $0, $\s => $\s, $g => $\n,
 	    $t => $\b, $3 => ?MAPCHANGE, $2 => ?MODECHANGE, $4 => ?FN},
@@ -155,30 +178,39 @@ draw_options([]) ->
     clear_rest_chars(),
     clear_nextline().
 
-
 main_loop() ->
     receive
+	{cmd, Cmd} ->
+	    cecho:addstr(io_lib:format("<cmd: ~w>", [Cmd])),
+	    cecho:refresh(),
+	    main_loop();
 	{word_option, Options} ->
 	    %cecho:addstr(io_lib:format("<ops: ~w>", [Options])),
 	    draw_options(Options),
-	    cecho:refresh();
+	    cecho:refresh(),
+	    main_loop();
 	{word_insert, Str} ->
 	    %cecho:addstr(io_lib:format("<str: ~w>", [Str])),
 	    cecho:addstr(Str),
 	    clear_nextline(),
-	    cecho:refresh();
+	    cecho:refresh(),
+	    main_loop();
 	delete_char ->
-	    todo;
+	    main_loop();
 	{error, I} ->
 	    cecho:addstr(io_lib:format("<err: ~w>", [I])),
-	    cecho:refresh()
-    end,
-    main_loop().
+	    cecho:refresh(),
+	    main_loop();
+	stop ->
+	    wordsvc:stop(),
+	    ok = application:stop(cecho),
+	    stopped
+    end.
 
 
 start() ->
     wordsvc:start_link(),
-    application:start(cecho),
+    ok = application:start(cecho),
     ok = cecho:noecho(),
     start_keylistener(),
     main_loop().
