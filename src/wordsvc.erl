@@ -107,7 +107,8 @@ start_link() ->
 query(Keys) ->
     wordsvc ! {query, self(), Keys},
     receive
-	{words, Words} -> Words
+	{words, Words} ->
+	    Words
     end.
 
 freqcount(Word) ->
@@ -119,5 +120,4 @@ stop() ->
 	{wordsvc, stopped} ->
 	    stopped
     end.
-
 

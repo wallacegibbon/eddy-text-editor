@@ -32,7 +32,6 @@ start_keylistener() ->
     Pid = self(),
     spawn_link(fun() -> listen_key(normal, Pid, [], []) end).
 
-
 listen_key(Mode, Pid, Keys, Arguments) ->
     case pretranslate(cecho:getch()) of
 	{ok, C} ->
@@ -129,9 +128,9 @@ handle_key(Mode, Pid, Keys, Options) ->
     listen_key(Mode, Pid, [], []).
 
 
-translatecmd(Key1, Key2) -> maps:get([Key1, Key2], ?COMMANDS, unknown).
-
 pretranslate(C) -> maps:find(char_to_lower(C), ?BASICMAP).
+
+translatecmd(Key1, Key2) -> maps:get([Key1, Key2], ?COMMANDS, unknown).
 
 translatesym(Key, N) -> maps:get(Key, get_symmap(N), $\s).
 
@@ -205,7 +204,6 @@ main_loop() ->
 	    ok = application:stop(cecho),
 	    stopped
     end.
-
 
 start() ->
     wordsvc:start_link(),
