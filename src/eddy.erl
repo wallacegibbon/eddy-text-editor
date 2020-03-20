@@ -27,10 +27,13 @@
 
 -define(SYM5, #{$1 => $?, $2 => $`}).
 
+-define(T9WINROWS, 5).
+-define(T9WINCOLS, 20).
+
 
 start_keylistener() ->
     Pid = self(),
-    spawn_link(fun() -> listen_key(normal, Pid, [], []) end).
+    spawn_link(fun() -> listen_key(t9_start, Pid, [], []) end).
 
 listen_key(Mode, Pid, Keys, Arguments) ->
     case pretranslate(cecho:getch()) of
@@ -40,22 +43,20 @@ listen_key(Mode, Pid, Keys, Arguments) ->
 	    listen_key(Mode, Pid, Keys, Arguments)
     end.
 
-%% back to normal with double click on MAPCHANGE
+%% back to t9 with double click on MAPCHANGE
 handle_key(chmap, Pid, [chmap, chmap], _) ->
-    Pid ! {word_option, []},
-    listen_key(normal, Pid, [], []);
+    listen_key(t9_start, Pid, [], []);
 
 %% prepare map selection
 handle_key(_, Pid, [chmap | _], _) ->
     listen_key(chmap, Pid, [chmap], []);
 
 handle_key(chmap, Pid, [N, chmap], _) when N >= $1, N =< $9 ->
-    Pid ! {word_option, []},
+    Pid ! t9_stop,
     listen_key({sym, N - $0}, Pid, [], []);
 
 handle_key(chmap, Pid, [_, chmap], _) ->
-    Pid ! {word_option, []},
-    listen_key(normal, Pid, [], []);
+    listen_key(chmap, Pid, [chmap], []);
 
 %% command mode
 handle_key(waitcmd1, Pid, [fn, fn], OldMode) ->
@@ -77,43 +78,57 @@ handle_key(waitcmd2, Pid, [B, A, fn], OldMode) ->
 	    listen_key(OldMode, Pid, [], [])
     end;
 
-%% T9 input method
-handle_key(normal, Pid, [C | _] = Keys, _) when C >= $2, C =< $9 ->
-    Options = wordsvc:query(lists:reverse(Keys)),
-    Pid ! {word_option, Options},
-    listen_key(normal, Pid, Keys, Options);
-
-handle_key(normal, Pid, [$1 | RKeys], [W | Rest]) ->
-    Options = Rest ++ [W],
-    Pid ! {word_option, Options},
-    listen_key(normal, Pid, RKeys, Options);
-
-handle_key(normal, Pid, [$1], []) ->
-    listen_key(normal, Pid, [], []);
-
-handle_key(normal, Pid, [$0 | RKeys], Options) ->
-    listen_key(normal, Pid, RKeys, Options);
-
-%% when the word is selected, empty the word list and options
-handle_key(normal, Pid, [C | _], [Word | _]) when C =:= $\s; C =:= $\n ->
-    Pid ! {word_insert, Word},
-    wordsvc:freqcount(Word),
-    listen_key(normal, Pid, [], []);
-
-%% in any mode, a direct enter or space is self inserting
+%% in any input mode, a direct enter or space is self inserting
 handle_key(Mode, Pid, [C], []) when C =:= $\s; C =:= $\n ->
     Pid ! {word_insert, [C]},
     listen_key(Mode, Pid, [], []);
 
-handle_key(normal, Pid, [$\b, _ | Keys], _) ->
+%% T9 input method
+handle_key(t9_start, Pid, [C] = Keys, _) when C >= $2, C =< $9 ->
+    Pid ! t9_start,
+    Options = wordsvc:query(Keys),
+    Pid ! {word_option, Options},
+    listen_key(t9, Pid, Keys, Options);
+
+handle_key(t9_start, Pid, [_], _) ->
+    listen_key(t9_start, Pid, [], []);
+
+handle_key(t9, Pid, [C | _] = Keys, _) when C >= $2, C =< $9 ->
     Options = wordsvc:query(lists:reverse(Keys)),
     Pid ! {word_option, Options},
-    listen_key(normal, Pid, Keys, Options);
+    listen_key(t9, Pid, Keys, Options);
 
-handle_key(normal, Pid, [$\b], _) ->
-    listen_key(normal, Pid, [], []);
+handle_key(t9, Pid, [$1 | RKeys], [W | Rest]) ->
+    Options = Rest ++ [W],
+    Pid ! {word_option, Options},
+    listen_key(t9, Pid, RKeys, Options);
 
-handle_key(Mode, Pid, [$\b], []) when Mode =/= normal ->
+handle_key(t9, Pid, [$1], []) ->
+    listen_key(t9, Pid, [], []);
+
+handle_key(t9, Pid, [$0 | RKeys], Options) ->
+    listen_key(t9, Pid, RKeys, Options);
+
+%% when the word is selected, empty the word list and options
+handle_key(t9, Pid, [C | _], [Word | _]) when C =:= $\s; C =:= $\n ->
+    Pid ! t9_stop,
+    Pid ! {word_insert, Word},
+    wordsvc:freqcount(Word),
+    listen_key(t9_start, Pid, [], []);
+
+handle_key(t9, Pid, [$\b, _ | Keys], _) when Keys =/= [] ->
+    Options = wordsvc:query(lists:reverse(Keys)),
+    Pid ! {word_option, Options},
+    listen_key(t9, Pid, Keys, Options);
+
+handle_key(t9, Pid, [$\b, _], _) ->
+    Pid ! t9_stop,
+    listen_key(t9_start, Pid, [], []);
+
+handle_key(t9, Pid, [$\b], _) ->
+    listen_key(t9_start, Pid, [], []);
+
+handle_key(Mode, Pid, [$\b], []) when Mode =/= t9 ->
     Pid ! delete_char,
     listen_key(Mode, Pid, [], []);
 
@@ -141,74 +156,96 @@ get_symmap(4) -> ?SYM4;
 get_symmap(5) -> ?SYM5;
 get_symmap(_) -> #{}.
 
-
 char_to_lower(C) when C >= $A, C =< $Z -> C + ($a - $A);
 char_to_lower(C) -> C.
 
-spacen(0) -> [];
-spacen(N) -> [$\s | spacen(N - 1)].
 
-clear_nextline() ->
-    {_, MCol} = cecho:getmaxyx(),
+new_optionwin() ->
     {Row, Col} = cecho:getyx(),
-    cecho:move(Row + 1, 0),
-    cecho:addstr(spacen(MCol)),
-    cecho:move(Row + 2, 0),
-    cecho:addstr(spacen(MCol)),
+    cecho:curs_set(0),
+    W = cecho:newwin(?T9WINROWS, ?T9WINCOLS, Row+1, Col),
+    cecho:wborder(W, $|, $|, $-, $-, $+, $+, $+, $+),
+    W.
+
+del_optionwin(T9Win) ->
+    cecho:delwin(T9Win),
+    cecho:curs_set(1),
+    ok.
+
+draw_options(#{t9window := T9Win} = Params, Options) ->
+    {Row, Col} = cecho:getyx(),
+    cecho:werase(T9Win),
+    draw_option1(Params, lists:sublist(Options, ?T9WINROWS)),
     cecho:move(Row, Col).
 
-clear_rest_chars() ->
-    {_, MCol} = cecho:getmaxyx(),
+draw_option1(#{t9window := T9Win} = Params, [Word | RestOptions]) ->
+    {Row, _} = cecho:getyx(T9Win),
+    cecho:waddstr(T9Win, Word),
+    cecho:wmove(T9Win, Row+1, 0),
+    draw_option1(Params, RestOptions);
+draw_option1(#{t9window := T9Win}, []) ->
+    cecho:wmove(T9Win, 0, 0),
+    cecho:wrefresh(T9Win).
+
+show_msg(Msg) ->
+    {MRow, _} = cecho:getmaxyx(),
     {Row, Col} = cecho:getyx(),
-    cecho:addstr(spacen(MCol - Col)),
-    cecho:move(Row, Col).
+    cecho:mvaddstr(MRow-1, 0, Msg),
+    cecho:move(Row, Col),
+    cecho:refresh().
 
-draw_options([Word | RestOptions]) ->
-    clear_rest_chars(),
-    clear_nextline(),
-    {Row, Col} = cecho:getyx(),
-    cecho:addstr(Word),
-    cecho:move(Row + 1, Col),
-    cecho:addstr(string:join(RestOptions, " ")),
-    cecho:move(Row, Col);
+stop_t9(#{t9window := T9Win}) -> del_optionwin(T9Win);
+stop_t9(_) -> ok.
 
-draw_options([]) ->
-    clear_rest_chars(),
-    clear_nextline().
-
-main_loop() ->
+main_loop(Params) ->
     receive
 	{cmd, Cmd} ->
-	    cecho:addstr(io_lib:format("<cmd: ~w>", [Cmd])),
-	    cecho:refresh(),
-	    main_loop();
+	    show_msg(io_lib:format("command: ~w", [Cmd])),
+	    main_loop(Params);
+	t9_start ->
+	    main_loop(Params#{t9window => new_optionwin()});
+	t9_stop ->
+	    stop_t9(Params),
+	    main_loop(#{});
 	{word_option, Options} ->
-	    %cecho:addstr(io_lib:format("<ops: ~w>", [Options])),
-	    draw_options(Options),
-	    cecho:refresh(),
-	    main_loop();
+	    draw_options(Params, Options),
+	    main_loop(Params);
 	{word_insert, Str} ->
-	    %cecho:addstr(io_lib:format("<str: ~w>", [Str])),
 	    cecho:addstr(Str),
-	    clear_nextline(),
 	    cecho:refresh(),
-	    main_loop();
+	    main_loop(Params);
 	delete_char ->
-	    main_loop();
+	    %% todo
+	    main_loop(Params);
 	{error, I} ->
-	    cecho:addstr(io_lib:format("<err: ~w>", [I])),
-	    cecho:refresh(),
-	    main_loop();
+	    show_msg(io_lib:format("error: ~w", [I])),
+	    main_loop(Params);
 	stop ->
 	    wordsvc:stop(),
 	    ok = application:stop(cecho),
 	    stopped
     end.
 
+char_repeat(_, 0) -> [];
+char_repeat(C, N) -> [C, char_repeat(C, N-1)].
+
+fill_rows(R, R, _, _) ->
+    ok;
+fill_rows(R, MRow, MCol, Char) ->
+    cecho:mvaddstr(R, 0, char_repeat(Char, MCol)),
+    fill_rows(R+1, MRow, MCol, Char).
+
+fill_screen(C) ->
+    {MRow, MCol} = cecho:getmaxyx(),
+    fill_rows(0, MRow, MCol, C),
+    cecho:move(0, 0),
+    cecho:refresh().
+
 start() ->
     wordsvc:start_link(),
     ok = application:start(cecho),
     ok = cecho:noecho(),
+    fill_screen($.),
     start_keylistener(),
-    main_loop().
+    main_loop(#{}).
 

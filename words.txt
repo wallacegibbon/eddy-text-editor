@@ -42,6 +42,7 @@ abbeys
 abbot
 abbots
 abbott
+abbrev
 abbreviate
 abbreviated
 abbreviates
@@ -11728,6 +11729,7 @@ clutters
 clyde
 clydesdale
 clytemnestra
+cmd
 coach
 coached
 coaches
@@ -25331,6 +25333,7 @@ freud
 freudian
 frey
 freya
+fri
 friable
 friar
 friars
@@ -34197,6 +34200,7 @@ jinx
 jinxed
 jinxes
 jinxing
+jit
 jitney
 jitneys
 jitterbug
@@ -34484,6 +34488,7 @@ jujubes
 jujutsu
 jukebox
 jukeboxes
+jul
 julep
 juleps
 jules
@@ -34518,6 +34523,7 @@ jumps
 jumpsuit
 jumpsuits
 jumpy
+jun
 junco
 juncoes
 juncos
@@ -40825,6 +40831,7 @@ mommas
 mommies
 mommy
 moms
+mon
 mona
 monaco
 monarch
@@ -41414,6 +41421,7 @@ mozart
 mozilla
 mozzarella
 ms
+msg
 mu
 muawiya
 mubarak
@@ -43078,6 +43086,7 @@ nourishes
 nourishing
 nourishment
 nous
+nov
 nova
 novae
 novartis
@@ -56838,6 +56847,7 @@ sentinels
 sentries
 sentry
 seoul
+sep
 sepal
 sepals
 separable
@@ -64809,6 +64819,7 @@ thrusting
 thrusts
 thruway
 thruways
+thu
 thucydides
 thud
 thudded
@@ -64851,6 +64862,7 @@ thundershowers
 thunderstorm
 thunderstorms
 thunderstruck
+thur
 thurber
 thurman
 thurmond
@@ -66606,6 +66618,8 @@ tucks
 tucson
 tucuman
 tudor
+tue
+tues
 tuesday
 tuesdays
 tuft
