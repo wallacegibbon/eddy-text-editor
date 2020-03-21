@@ -5915,6 +5915,8 @@ bewitches
 bewitching
 beyer
 beyond
+bg
+bgm
 bhopal
 bhutan
 bhutto

@@ -143,6 +143,9 @@ handle_key(Mode, Pid, Keys, Options) ->
     listen_key(Mode, Pid, [], []).
 
 
+char_to_lower(C) when C >= $A, C =< $Z -> C + ($a - $A);
+char_to_lower(C) -> C.
+
 pretranslate(C) -> maps:find(char_to_lower(C), ?BASICMAP).
 
 translatecmd(Key1, Key2) -> maps:get([Key1, Key2], ?COMMANDS, unknown).
@@ -155,9 +158,6 @@ get_symmap(3) -> ?SYM3;
 get_symmap(4) -> ?SYM4;
 get_symmap(5) -> ?SYM5;
 get_symmap(_) -> #{}.
-
-char_to_lower(C) when C >= $A, C =< $Z -> C + ($a - $A);
-char_to_lower(C) -> C.
 
 
 new_optionwin() ->
@@ -172,17 +172,17 @@ del_optionwin(T9Win) ->
     cecho:curs_set(1),
     ok.
 
-draw_options(#{t9window := T9Win} = Params, Options) ->
+draw_options(#{t9window := T9Win} = State, Options) ->
     {Row, Col} = cecho:getyx(),
     cecho:werase(T9Win),
-    draw_option1(Params, lists:sublist(Options, ?T9WINROWS)),
+    draw_option1(State, lists:sublist(Options, ?T9WINROWS)),
     cecho:move(Row, Col).
 
-draw_option1(#{t9window := T9Win} = Params, [Word | RestOptions]) ->
+draw_option1(#{t9window := T9Win} = State, [Word | RestOptions]) ->
     {Row, _} = cecho:getyx(T9Win),
     cecho:waddstr(T9Win, Word),
     cecho:wmove(T9Win, Row+1, 0),
-    draw_option1(Params, RestOptions);
+    draw_option1(State, RestOptions);
 draw_option1(#{t9window := T9Win}, []) ->
     cecho:wmove(T9Win, 0, 0),
     cecho:wrefresh(T9Win).
@@ -194,50 +194,58 @@ show_msg(Msg) ->
     cecho:move(Row, Col),
     cecho:refresh().
 
-stop_t9(#{t9window := T9Win}) -> del_optionwin(T9Win);
-stop_t9(_) -> ok.
 
-main_loop(Params) ->
+main_handler(State, {cmd, Cmd}) ->
+    show_msg(io_lib:format("command: ~w", [Cmd])),
+    {ok, State};
+
+main_handler(State, t9_start) ->
+    {ok, State#{t9window => new_optionwin()}};
+
+main_handler(#{t9window := T9Win} = State, t9_stop) ->
+    del_optionwin(T9Win),
+    {ok, maps:without([t9window], State)};
+
+main_handler(State, t9_stop) ->
+    {ok, State};
+
+main_handler(State, {word_option, Options}) ->
+    draw_options(State, Options),
+    {ok, State};
+
+main_handler(State, {word_insert, Str}) ->
+    cecho:addstr(Str),
+    cecho:refresh(),
+    {ok, State};
+
+main_handler(State, delete_char) ->
+    %% todo
+    {ok, State};
+
+main_handler(State, {error, I}) ->
+    show_msg(io_lib:format("error: ~w", [I])),
+    {ok, State};
+
+main_handler(_State, stop) ->
+    wordsvc:stop(),
+    ok = application:stop(cecho),
+    stopped.
+
+main_loop(State) ->
     receive
-	{cmd, Cmd} ->
-	    show_msg(io_lib:format("command: ~w", [Cmd])),
-	    main_loop(Params);
-	t9_start ->
-	    main_loop(Params#{t9window => new_optionwin()});
-	t9_stop ->
-	    stop_t9(Params),
-	    main_loop(#{});
-	{word_option, Options} ->
-	    draw_options(Params, Options),
-	    main_loop(Params);
-	{word_insert, Str} ->
-	    cecho:addstr(Str),
-	    cecho:refresh(),
-	    main_loop(Params);
-	delete_char ->
-	    %% todo
-	    main_loop(Params);
-	{error, I} ->
-	    show_msg(io_lib:format("error: ~w", [I])),
-	    main_loop(Params);
-	stop ->
-	    wordsvc:stop(),
-	    ok = application:stop(cecho),
-	    stopped
+	Any ->
+	    case main_handler(State, Any) of
+		{ok, NewState} ->
+		    main_loop(NewState);
+		stopped ->
+		    stopped
+	    end
     end.
 
-char_repeat(_, 0) -> [];
-char_repeat(C, N) -> [C, char_repeat(C, N-1)].
-
-fill_rows(R, R, _, _) ->
-    ok;
-fill_rows(R, MRow, MCol, Char) ->
-    cecho:mvaddstr(R, 0, char_repeat(Char, MCol)),
-    fill_rows(R+1, MRow, MCol, Char).
-
-fill_screen(C) ->
+fill_screen(Char) ->
     {MRow, MCol} = cecho:getmaxyx(),
-    fill_rows(0, MRow, MCol, C),
+    Chars = lists:map(fun(_) -> Char end, lists:seq(1, MCol * MRow)),
+    cecho:mvaddstr(0, 0, Chars),
     cecho:move(0, 0),
     cecho:refresh().
 
