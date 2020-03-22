@@ -10131,6 +10131,7 @@ cetaceans
 cetus
 ceylon
 cezanne
+ch
 chablis
 chad
 chadwick
@@ -10635,6 +10636,7 @@ chews
 chewy
 cheyenne
 cheyennes
+chgrp
 chi
 chianti
 chiantis
@@ -10845,6 +10847,7 @@ chloroformed
 chloroforming
 chloroforms
 chlorophyll
+chmod
 chock
 chocked
 chocking
@@ -10934,6 +10937,7 @@ chowder
 chowders
 chowed
 chowing
+chown
 chows
 chretien
 chris
@@ -27880,6 +27884,7 @@ grownups
 grows
 growth
 growths
+grp
 grub
 grubbed
 grubbier
