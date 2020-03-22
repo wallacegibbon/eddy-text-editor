@@ -18,16 +18,16 @@ translate_by_offset(N) when N =:= 18 -> $7;
 translate_by_offset(N) when N >= 19, N < 22 -> $8;
 translate_by_offset(_) -> $9.
 
-fetch_words(<<A:8/integer, R/binary>>, W) when A =/= $\n ->
-    fetch_words(R, [A | W]);
-fetch_words(<<_:8/integer, R/binary>>, W) ->
+fetch_word(<<A:8/integer, R/binary>>, W) when A =/= $\n ->
+    fetch_word(R, [A | W]);
+fetch_word(<<_:8/integer, R/binary>>, W) ->
     {lists:reverse(W), R};
-fetch_words(<<>>, _) ->
+fetch_word(<<>>, _) ->
     nothing.
 
 %% Non-ascii words will be ignored
 translate_words(Ws, Result) ->
-    case fetch_words(Ws, []) of
+    case fetch_word(Ws, []) of
 	{W, RestBinary} ->
 	    try translate_word(W) of
 		Ww ->
