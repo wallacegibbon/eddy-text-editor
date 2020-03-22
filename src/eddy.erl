@@ -116,14 +116,14 @@ handle_key(t9, Pid, [C | _], [Word | _]) when C =:= $\s; C =:= $\n ->
     wordsvc:freqcount(Word),
     listen_key(t9_start, Pid, [], []);
 
-handle_key(t9, Pid, [$\b, _ | Keys], _) when Keys =/= [] ->
-    Options = wordsvc:query(lists:reverse(Keys)),
-    Pid ! {word_option, Options},
-    listen_key(t9, Pid, Keys, Options);
-
 handle_key(t9, Pid, [$\b, _], _) ->
     Pid ! t9_stop,
     listen_key(t9_start, Pid, [], []);
+
+handle_key(t9, Pid, [$\b, _ | Keys], _) ->
+    Options = wordsvc:query(lists:reverse(Keys)),
+    Pid ! {word_option, Options},
+    listen_key(t9, Pid, Keys, Options);
 
 handle_key(t9, Pid, [$\b], _) ->
     listen_key(t9_start, Pid, [], []);
