@@ -28,7 +28,7 @@
 -define(SYM5, #{$1 => $?, $2 => $`}).
 
 -define(T9WINROWS, 5).
--define(T9WINCOLS, 20).
+-define(T9WINCOLS, 22).
 
 
 start_keylistener() ->
