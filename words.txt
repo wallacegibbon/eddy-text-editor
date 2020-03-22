@@ -13235,6 +13235,7 @@ consistent
 consistently
 consisting
 consists
+consolas
 consolation
 consolations
 console
@@ -37531,6 +37532,7 @@ lucia
 lucian
 luciano
 lucid
+lucida
 lucidity
 lucidly
 lucidness
@@ -39438,6 +39440,7 @@ meningitis
 menkalinan
 menkar
 menkent
+menlo
 mennen
 mennonite
 mennonites
@@ -56970,6 +56973,7 @@ serializing
 serially
 serials
 series
+serif
 serious
 seriously
 seriousness
