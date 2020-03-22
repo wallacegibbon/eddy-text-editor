@@ -2734,7 +2734,6 @@ apothecary
 apotheoses
 apotheosis
 app
-apps
 appal
 appalachia
 appalachian
@@ -2915,6 +2914,7 @@ approximates
 approximating
 approximation
 approximations
+apps
 apps
 appurtenance
 appurtenances
@@ -15779,8 +15779,8 @@ dazzle
 dazzled
 dazzles
 dazzling
-dc
 db
+dc
 de
 deacon
 deaconess
@@ -17412,6 +17412,7 @@ dialogues
 dials
 dialyses
 dialysis
+dialyzer
 dialyzes
 diameter
 diameters
@@ -21782,7 +21783,9 @@ estranging
 estrogen
 estuaries
 estuary
+et
 eta
+etc
 etch
 etched
 etcher
@@ -40607,6 +40610,7 @@ mnemonic
 mnemonics
 mnemosyne
 mnesia
+mnt
 mo
 moan
 moaned
@@ -60742,6 +60746,7 @@ src
 srinagar
 sriracha
 srivijaya
+srv
 stab
 stabbed
 stabbing
