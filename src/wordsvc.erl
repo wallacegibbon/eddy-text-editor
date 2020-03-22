@@ -18,10 +18,13 @@ translate_by_offset(N) when N =:= 18 -> $7;
 translate_by_offset(N) when N >= 19, N < 22 -> $8;
 translate_by_offset(_) -> $9.
 
-fetch_word(<<A:8/integer, R/binary>>, W) when A =/= $\n ->
+%% since there is no space inside words, all spaces can be simply ignored
+fetch_word(<<A:8/integer, R/binary>>, W) when A >= $a, A =< $z ->
     fetch_word(R, [A | W]);
-fetch_word(<<_:8/integer, R/binary>>, W) ->
+fetch_word(<<A:8/integer, R/binary>>, W) when A =:= $\n ->
     {lists:reverse(W), R};
+fetch_word(<<_:8/integer, R/binary>>, W) ->
+    fetch_word(R, W);
 fetch_word(<<>>, _) ->
     nothing.
 
