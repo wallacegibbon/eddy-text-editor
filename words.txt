@@ -40493,6 +40493,7 @@ mission
 missionaries
 missionary
 missions
+missis
 mississauga
 mississippi
 mississippian
@@ -40520,6 +40521,7 @@ misstates
 misstating
 misstep
 missteps
+missus
 missy
 mist
 mistake
@@ -41434,6 +41436,8 @@ mozambique
 mozart
 mozilla
 mozzarella
+mr
+mrs
 ms
 msg
 mu
