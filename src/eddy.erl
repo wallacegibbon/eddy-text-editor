@@ -31,16 +31,23 @@
 -define(T9WINCOLS, 22).
 
 
+%% start the key listening loop as a process.
 start_keylistener() ->
     Pid = self(),
     spawn_link(fun() -> listen_key(t9_start, Pid, [], []) end).
 
+
 listen_key(Mode, Pid, Keys, Arguments) ->
-    case pretranslate(cecho:getch()) of
+    try
+	pretranslate(cecho:getch())
+    of
 	{ok, C} ->
 	    handle_key(Mode, Pid, [C | Keys], Arguments);
 	error ->
 	    listen_key(Mode, Pid, Keys, Arguments)
+    catch
+	exit:_ ->
+	    ok
     end.
 
 %% back to t9 with double click on MAPCHANGE
@@ -70,13 +77,8 @@ handle_key(waitcmd1, Pid, [A, fn], OldMode) ->
 
 %% this is where this process may exit
 handle_key(waitcmd2, Pid, [B, A, fn], OldMode) ->
-    case translatecmd(A, B) of
-	Quit when Quit =:= quit; Quit =:= savequit ->
-	    Pid ! stop;
-	Cmd ->
-	    Pid ! {cmd, Cmd},
-	    listen_key(OldMode, Pid, [], [])
-    end;
+    Pid ! {cmd, translatecmd(A, B)},
+    listen_key(OldMode, Pid, [], []);
 
 %% in any input mode, a direct enter or space is self inserting
 handle_key(Mode, Pid, [C], []) when C =:= $\s; C =:= $\n ->
@@ -200,6 +202,10 @@ show_msg(Msg) ->
     cecho:refresh().
 
 
+main_handler(_, {cmd, Quit}) when Quit =:= quit; Quit =:= savequit ->
+    cleanup(),
+    stopped;
+
 main_handler(State, {cmd, Cmd}) ->
     show_msg(io_lib:format("command: ~w", [Cmd])),
     {ok, State};
@@ -231,12 +237,8 @@ main_handler(State, delete_char) ->
 
 main_handler(State, {error, I}) ->
     show_msg(io_lib:format("error: ~w", [I])),
-    {ok, State};
+    {ok, State}.
 
-main_handler(_State, stop) ->
-    wordsvc:stop(),
-    ok = application:stop(cecho),
-    stopped.
 
 main_loop(State) ->
     receive
@@ -248,6 +250,11 @@ main_loop(State) ->
 		    stopped
 	    end
     end.
+
+cleanup() ->
+    wordsvc:stop(),
+    ok = application:stop(cecho),
+    ok.
 
 fill_screen(Char) ->
     {MRow, MCol} = cecho:getmaxyx(),
