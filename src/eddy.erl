@@ -89,7 +89,7 @@ handle_key(Mode, Pid, [C], []) when C =:= $\s; C =:= $\n ->
 handle_key(t9_start, Pid, [C] = Keys, _) when C >= $2, C =< $9 ->
     Pid ! t9_start,
     Options = wordsvc:query(Keys),
-    Pid ! {word_option, {Keys, Options}},
+    sync_options(Pid, Options, Keys),
     listen_key(t9, Pid, Keys, Options);
 
 handle_key(t9_start, Pid, [_], _) ->
@@ -97,12 +97,12 @@ handle_key(t9_start, Pid, [_], _) ->
 
 handle_key(t9, Pid, [C | _] = Keys, _) when C >= $2, C =< $9 ->
     Options = wordsvc:query(lists:reverse(Keys)),
-    Pid ! {word_option, {Keys, Options}},
+    sync_options(Pid, Options, Keys),
     listen_key(t9, Pid, Keys, Options);
 
 handle_key(t9, Pid, [$1 | RKeys], [W | Rest]) ->
     Options = Rest ++ [W],
-    Pid ! {word_option, {RKeys, Options}},
+    sync_options(Pid, Options, RKeys),
     listen_key(t9, Pid, RKeys, Options);
 
 handle_key(t9, Pid, [$1], []) ->
@@ -124,7 +124,7 @@ handle_key(t9, Pid, [$\b, _], _) ->
 
 handle_key(t9, Pid, [$\b, _ | Keys], _) ->
     Options = wordsvc:query(lists:reverse(Keys)),
-    Pid ! {word_option, {Keys, Options}},
+    sync_options(Pid, Options, Keys),
     listen_key(t9, Pid, Keys, Options);
 
 handle_key(t9, Pid, [$\b], _) ->
@@ -144,6 +144,9 @@ handle_key(Mode, Pid, Keys, Options) ->
     Pid ! {error, {Mode, Keys, Options}},
     listen_key(Mode, Pid, [], []).
 
+
+sync_options(Pid, Options, Keys) ->
+    Pid ! {word_option, {Options, lists:reverse(Keys)}}.
 
 char_to_lower(C) when C >= $A, C =< $Z ->
     C + ($a - $A);
@@ -219,10 +222,10 @@ main_handler(#{t9window := T9Win} = State, t9_stop) ->
 main_handler(State, t9_stop) ->
     {ok, State};
 
-main_handler(State, {word_option, {Keys, []}}) ->
-    draw_options(State, [lists:reverse(Keys)]),
+main_handler(State, {word_option, {[], Keys}}) ->
+    draw_options(State, [Keys]),
     {ok, State};
-main_handler(State, {word_option, {_, Options}}) ->
+main_handler(State, {word_option, {Options, _}}) ->
     draw_options(State, Options),
     {ok, State};
 
