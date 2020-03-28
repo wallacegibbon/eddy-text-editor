@@ -104,28 +104,28 @@ search_loop({Dict, FreqMap}) ->
 	    search_loop({Dict, NewFreq});
 	{stop, Pid} ->
 	    dump_frequency(FreqMap),
-	    Pid ! {wordsvc, stopped}
+	    Pid ! {?MODULE, stopped}
     end.
 
 start_link() ->
-    register(wordsvc, spawn_link(fun() ->
+    register(?MODULE, spawn_link(fun() ->
 					 search_loop(load_words())
 				 end)).
 
 query(Keys) ->
-    wordsvc ! {query, self(), Keys},
+    ?MODULE ! {query, self(), Keys},
     receive
 	{words, Words} ->
 	    Words
     end.
 
 freqcount(Word) ->
-    wordsvc ! {use, Word}.
+    ?MODULE ! {use, Word}.
 
 stop() ->
-    wordsvc ! {stop, self()},
+    ?MODULE ! {stop, self()},
     receive
-	{wordsvc, stopped} ->
+	{?MODULE, stopped} ->
 	    stopped
     end.
 
