@@ -73,7 +73,7 @@ dump_frequency(FreqMap) ->
 
 find_words(Keys, Dict, FreqMap) when Keys =/= [] ->
     Ws = [Word || {KeyList, Word} <- Dict, match_keys(Keys, KeyList)],
-   prepare_result(Ws, FreqMap);
+    prepare_result(Ws, FreqMap);
 find_words([], _, _) ->
     [].
 
