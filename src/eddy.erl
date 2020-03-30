@@ -205,40 +205,40 @@ show_msg(Msg) ->
     cecho:refresh().
 
 
-main_handler(_, {cmd, Quit}) when Quit =:= quit; Quit =:= savequit ->
+main_handler({cmd, Quit}, _) when Quit =:= quit; Quit =:= savequit ->
     cleanup(),
     stopped;
 
-main_handler(State, {cmd, Cmd}) ->
+main_handler({cmd, Cmd}, State) ->
     show_msg(io_lib:format("command: ~w", [Cmd])),
     {ok, State};
 
-main_handler(State, t9_start) ->
+main_handler(t9_start, State) ->
     {ok, State#{t9window => new_optionwin()}};
 
-main_handler(#{t9window := T9Win} = State, t9_stop) ->
+main_handler(t9_stop, #{t9window := T9Win} = State) ->
     del_optionwin(T9Win),
     {ok, maps:without([t9window], State)};
-main_handler(State, t9_stop) ->
+main_handler(t9_stop, State) ->
     {ok, State};
 
-main_handler(State, {word_option, {[], Keys}}) ->
+main_handler({word_option, {[], Keys}}, State) ->
     draw_options(State, [Keys]),
     {ok, State};
-main_handler(State, {word_option, {Options, _}}) ->
+main_handler({word_option, {Options, _}}, State) ->
     draw_options(State, Options),
     {ok, State};
 
-main_handler(State, {word_insert, Str}) ->
+main_handler({word_insert, Str}, State) ->
     cecho:addstr(Str),
     cecho:refresh(),
     {ok, State};
 
-main_handler(State, delete_char) ->
+main_handler(delete_char, State) ->
     %% todo
     {ok, State};
 
-main_handler(State, {error, I}) ->
+main_handler({error, I}, State) ->
     show_msg(io_lib:format("error: ~w", [I])),
     {ok, State}.
 
@@ -246,7 +246,7 @@ main_handler(State, {error, I}) ->
 main_loop(State) ->
     receive
 	Anything ->
-	    case main_handler(State, Anything) of
+	    case main_handler(Anything, State) of
 		{ok, NewState} ->
 		    main_loop(NewState);
 		stopped ->
