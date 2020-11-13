@@ -1,8 +1,7 @@
-{application, eddy,
- [{description, "A text editor"},
-  {vsn, "0.1.0"},
-  {applications, [kernel, stdlib ]},
-  {registered, [wordsvc]},
-  {mod, {eddy_app, []}},
-  {licenses, ["Apache 2.0"]}
+{application,eddy,
+ [{description,"A text editor"},
+  {vsn,"0.1.0"},
+  {applications,[kernel,stdlib,cecho]},
+  {registered,[wordsvc]},
+  {licenses,["Apache 2.0"]}
  ]}.

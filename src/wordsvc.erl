@@ -1,12 +1,13 @@
 -module(wordsvc).
 
--export([start_link/0, query/1, freqcount/1, stop/0]).
+-export([start_link/0,query/1,freqcount/1,stop/0]).
 
 -define(WORDS_FILE, "./words.txt").
--define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
+%-define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
+-define(FREQUENCY_FILE, "./frequency.dat").
 
-translate_word([A | Rest]) ->
-    [translate_alpha(A) | translate_word(Rest)];
+translate_word([A|Rest]) ->
+    [translate_alpha(A)|translate_word(Rest)];
 translate_word([]) ->
     [].
 
@@ -25,11 +26,11 @@ translate_by_offset(_) ->
     $9.
 
 %% since there is no space inside words, all spaces can be simply ignored
-fetch_word(<<A:8/integer, R/binary>>, W) when A >= $a, A =< $z ->
-    fetch_word(R, [A | W]);
-fetch_word(<<A:8/integer, R/binary>>, W) when A =:= $\n ->
-    {lists:reverse(W), R};
-fetch_word(<<_:8/integer, R/binary>>, W) ->
+fetch_word(<<A:8/integer,R/binary>>, W) when A >= $a, A =< $z ->
+    fetch_word(R, [A|W]);
+fetch_word(<<A:8/integer,R/binary>>, W) when A =:= $\n ->
+    {lists:reverse(W),R};
+fetch_word(<<_:8/integer,R/binary>>, W) ->
     fetch_word(R, W);
 fetch_word(<<>>, _) ->
     nothing.
@@ -37,11 +38,11 @@ fetch_word(<<>>, _) ->
 %% Non-ascii words will be ignored
 translate_words(Ws, Result) ->
     case fetch_word(Ws, []) of
-	{W, RestBinary} ->
+	{W,RestBinary} ->
 	    try translate_word(W) of
 		Ww ->
 		    translate_words(RestBinary,
-				    [{Ww, list_to_binary(W)} | Result])
+				    [{Ww,list_to_binary(W)}|Result])
 	    catch
 		_:_ ->
 		    translate_words(RestBinary, Result)
@@ -50,29 +51,37 @@ translate_words(Ws, Result) ->
 	    Result
     end.
 
-match_keys([C | R1], [C | R2]) ->
+match_keys([C|R1], [C|R2]) ->
     match_keys(R1, R2);
-match_keys([C1 | _], [C2 | _]) when C1 =/= C2 ->
+match_keys([C1|_], [C2|_]) when C1 =/= C2 ->
     false;
-match_keys([_ | _], []) ->
+match_keys([_|_], []) ->
     false;
 match_keys([], _) ->
     true.
 
 load_words() ->
-    {ok, Stream} = file:read_file(?WORDS_FILE),
+    {ok,Stream} = file:read_file(?WORDS_FILE),
     Dict = translate_words(Stream, []),
-    {ok, [FreqMap]} = file:consult(?FREQUENCY_FILE),
-    {Dict, FreqMap}.
+    {Dict,load_frequency()}.
+
+load_frequency() ->
+    try file:consult(?FREQUENCY_FILE) of
+	{ok,[FreqMap]} ->
+	    FreqMap
+    catch
+	_:_ ->
+	    #{}
+    end.
 
 dump_frequency(FreqMap) ->
-    {ok, F} = file:open(?FREQUENCY_FILE, write),
+    {ok,F} = file:open(?FREQUENCY_FILE, write),
     io:format(F, "~p.", [FreqMap]),
     ok = file:close(F).
 
 
 find_words(Keys, Dict, FreqMap) when Keys =/= [] ->
-    Ws = [Word || {KeyList, Word} <- Dict, match_keys(Keys, KeyList)],
+    Ws = [Word || {KeyList,Word} <- Dict, match_keys(Keys, KeyList)],
     prepare_result(Ws, FreqMap);
 find_words([], _, _) ->
     [].
@@ -93,18 +102,18 @@ freqcmp(Word1, Word2, FreqMap) ->
     maps:get(Word1, FreqMap, 0) > maps:get(Word2, FreqMap, 0).
 
 
-search_loop({Dict, FreqMap}) ->
+search_loop({Dict,FreqMap}) ->
     receive
-	{query, Pid, Keys} ->
-	    Pid ! {words, find_words(Keys, Dict, FreqMap)},
-	    search_loop({Dict, FreqMap});
-	{use, Word} ->
+	{query,Pid,Keys} ->
+	    Pid ! {words,find_words(Keys, Dict, FreqMap)},
+	    search_loop({Dict,FreqMap});
+	{use,Word} ->
 	    NewFreq = maps:update_with(list_to_binary(Word),
 				       fun(V) -> V + 1 end, 1, FreqMap),
-	    search_loop({Dict, NewFreq});
-	{stop, Pid} ->
+	    search_loop({Dict,NewFreq});
+	{stop,Pid} ->
 	    dump_frequency(FreqMap),
-	    Pid ! {?MODULE, stopped}
+	    Pid ! {?MODULE,stopped}
     end.
 
 start_link() ->
@@ -113,19 +122,19 @@ start_link() ->
 				 end)).
 
 query(Keys) ->
-    ?MODULE ! {query, self(), Keys},
+    ?MODULE ! {query,self(),Keys},
     receive
-	{words, Words} ->
+	{words,Words} ->
 	    Words
     end.
 
 freqcount(Word) ->
-    ?MODULE ! {use, Word}.
+    ?MODULE ! {use,Word}.
 
 stop() ->
-    ?MODULE ! {stop, self()},
+    ?MODULE ! {stop,self()},
     receive
-	{?MODULE, stopped} ->
+	{?MODULE,stopped} ->
 	    stopped
     end.
 
