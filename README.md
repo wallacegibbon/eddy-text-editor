@@ -1,6 +1,8 @@
 ## Introduction
 
-A text editor with built-in T9 input method.
+A modal text editor (like vi) with built-in T9 input method. You need only 3 fingers to write programs!
+
+(Under developing...)
 
 
 ## Movement
@@ -13,10 +15,10 @@ A text editor with built-in T9 input method.
 <<<      F      >>>        B
 
 
-<<  : move left word
->>  : move right word
-<<< : start of line
->>> : end of line
+<<  : move one word left
+>>  : move one word right
+<<< : move to the start of the line
+>>> : move to the end of the line
 F   : forward page
 B   : backward page
 ```
@@ -52,21 +54,21 @@ MAP 3
 
 <        =        >
 
-^        !        :        ;
+?        #        :        ;
 ```
 
 MAP 4
 
 ```
-+        -        *
++        *        -
 
-@        _        #
+@        %        &
 
-~        %        $        &
+!        ~        ^        _
 ```
 
 MAP 5
 
 ```
-?        .
+$        `
 ```

@@ -136,6 +136,7 @@ searchLoop({WordDictionary, FrequencyMap} = State) ->
                     Pid ! {Ref, Result},
                     searchLoop(NewState);
                 {stop, _} ->
+                    dumpFrequency(FrequencyMap),
                     Pid ! {Ref, stopped}
             end;
         {use, Word} ->
