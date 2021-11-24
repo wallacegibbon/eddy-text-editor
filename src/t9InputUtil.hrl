@@ -1,0 +1,2 @@
+-type eddyMode() :: t9Start | t9Insert | changeMap | waitCommand1 | waitCommand2 | {keyCollect, char()}.
+-type baseKeyStroke() :: integer() | changeMap | changeMode | command.

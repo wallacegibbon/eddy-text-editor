@@ -2,6 +2,6 @@
  [{description, "A text editor"},
   {vsn, "0.1.0"},
   {applications, [kernel, stdlib, cecho]},
-  {registered, [wordsvc]},
+  {registered, [keyToWordService, cursesWindowManager, inputStateMachine]},
   {licenses, ["Apache 2.0"]}
  ]}.
