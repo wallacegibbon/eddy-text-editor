@@ -1,66 +1,72 @@
-eddy
-=====
+## Introduction
 
 A text editor with built-in T9 input method.
 
 
-movement
---------
+## Movement
 
-L: move left word; R: move right word;
-H: start of line;  E: end of line;
-F: forword page;   B: backward page;
-
-L        ^        R
+```
+<<       ^       >>
 
 <        v        >
 
-H        F        E        B
+<<<      F      >>>        B
 
 
+<<  : move left word
+>>  : move right word
+<<< : start of line
+>>> : end of line
+F   : forward page
+B   : backward page
+```
 
-sym table
----------
 
-sym1
+## Map tables
 
+MAP 1
+
+```
 1        2        3
 
 4        5        6
 
 7        8        9        0
+```
 
+MAP 2
 
-sym2
-
+```
 [        "        ]
 
 (        '        )
 
 {        .        }        ,
+```
 
 
+MAP 3
 
-sym3
-
+```
 \        |        /
 
 <        =        >
 
 ^        !        :        ;
+```
 
+MAP 4
 
-sym4
-
+```
 +        -        *
 
 @        _        #
 
 ~        %        $        &
+```
 
+MAP 5
 
-sym5
-
+```
 ?        .
-
-
+```
