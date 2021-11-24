@@ -1,140 +1,176 @@
 -module(wordsvc).
 
--export([start_link/0,query/1,freqcount/1,stop/0]).
+-export([frequencyCount/1, dumpFrequency/1, start_link/0, query/1, stop/0]).
 
 -define(WORDS_FILE, "./words.txt").
 %-define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
 -define(FREQUENCY_FILE, "./frequency.dat").
 
-translate_word([A|Rest]) ->
-    [translate_alpha(A)|translate_word(Rest)];
-translate_word([]) ->
-    [].
+%-type t9KeyStroke() :: $2..$9.
+-type t9KeyStroke() :: integer().
+-type wordFrequencyMap() :: #{binary() => integer()}.
+-type wordDictionaryItem() :: {[t9KeyStroke()], binary()}.
+-type wordDictionary() :: [wordDictionaryItem()].
 
-translate_alpha(A) when A >= $A, A =< $Z ->
-    translate_by_offset(A - $A);
-translate_alpha(A) when A >= $a, A =< $z ->
-    translate_by_offset(A - $a).
+%% In the T9 input method, 2 <-> abc, 3 <-> def, 4 <-> ghi, 5 <-> jkl, 6 <-> mno, 7 <-> pqrs, 8 <-> tuv, 9 <-> wxyz
+-spec characterListToKeyList([char()]) -> [t9KeyStroke()].
+characterListToKeyList(AlphabetList) ->
+    lists:map(fun characterToKey/1, AlphabetList).
 
-translate_by_offset(N) when N < 18 ->
-    $2 + N div 3;
-translate_by_offset(N) when N =:= 18 ->
+-spec characterToKey(char()) -> t9KeyStroke().
+characterToKey(A) when A >= $A, A =< $Z ->
+    characterOffsetToKey(A - $A);
+characterToKey(A) when A >= $a, A =< $z ->
+    characterOffsetToKey(A - $a).
+
+-spec characterOffsetToKey(integer()) -> t9KeyStroke().
+characterOffsetToKey(Number) when Number < 18 ->
+    $2 + Number div 3;
+characterOffsetToKey(Number) when Number =:= 18 ->
     $7;
-translate_by_offset(N) when N >= 19, N < 22 ->
+characterOffsetToKey(Number) when Number >= 19, Number < 22 ->
     $8;
-translate_by_offset(_) ->
+characterOffsetToKey(_) ->
     $9.
 
 %% since there is no space inside words, all spaces can be simply ignored
-fetch_word(<<A:8/integer,R/binary>>, W) when A >= $a, A =< $z ->
-    fetch_word(R, [A|W]);
-fetch_word(<<A:8/integer,R/binary>>, W) when A =:= $\n ->
-    {lists:reverse(W),R};
-fetch_word(<<_:8/integer,R/binary>>, W) ->
-    fetch_word(R, W);
-fetch_word(<<>>, _) ->
+-spec fetchWordFromLine(binary(), [char()]) -> {[char()], binary()} | nothing.
+fetchWordFromLine(<<Alphabet:8/integer, Rest/binary>>, CollectedAlphabets) when Alphabet >= $a, Alphabet =< $z ->
+    fetchWordFromLine(Rest, [Alphabet | CollectedAlphabets]);
+fetchWordFromLine(<<Alphabet:8/integer, Rest/binary>>, CollectedAlphabets) when Alphabet =:= $\n ->
+    {lists:reverse(CollectedAlphabets), Rest};
+fetchWordFromLine(<<_:8/integer, Rest/binary>>, CollectedAlphabets) ->
+    fetchWordFromLine(Rest, CollectedAlphabets);
+fetchWordFromLine(<<>>, _) ->
     nothing.
 
 %% Non-ascii words will be ignored
-translate_words(Ws, Result) ->
-    case fetch_word(Ws, []) of
-	{W,RestBinary} ->
-	    try translate_word(W) of
-		Ww ->
-		    translate_words(RestBinary,
-				    [{Ww,list_to_binary(W)}|Result])
-	    catch
-		_:_ ->
-		    translate_words(RestBinary, Result)
-	    end;
-	nothing ->
-	    Result
+-spec buildWordDictionary(binary(), Result) -> Result when Result :: wordDictionary().
+buildWordDictionary(WordLinesText, Result) ->
+    case fetchWordFromLine(WordLinesText, []) of
+        {AlphabetList, RestBinary} ->
+            try characterListToKeyList(AlphabetList) of
+                KeyList ->
+                    buildWordDictionary(RestBinary, [{KeyList, list_to_binary(AlphabetList)} | Result])
+            catch
+                _:_ ->
+                    buildWordDictionary(RestBinary, Result)
+            end;
+        nothing ->
+            Result
     end.
 
-match_keys([C|R1], [C|R2]) ->
-    match_keys(R1, R2);
-match_keys([C1|_], [C2|_]) when C1 =/= C2 ->
+-spec matchKeys([t9KeyStroke()], [t9KeyStroke()]) -> boolean().
+matchKeys([Key | RestKeys1], [Key | RestKeys2]) ->
+    matchKeys(RestKeys1, RestKeys2);
+matchKeys([Key1 | _], [Key2 | _]) when Key1 =/= Key2 ->
     false;
-match_keys([_|_], []) ->
+matchKeys([_ | _], []) ->
     false;
-match_keys([], _) ->
+matchKeys([], _) ->
     true.
 
-load_words() ->
-    {ok,Stream} = file:read_file(?WORDS_FILE),
-    Dict = translate_words(Stream, []),
-    {Dict,load_frequency()}.
+-spec loadWordDictionary() -> {wordDictionary(), wordFrequencyMap()}.
+loadWordDictionary() ->
+    {ok, WordRowsText} = file:read_file(?WORDS_FILE),
+    WordDictionary = buildWordDictionary(WordRowsText, []),
+    {WordDictionary, loadWordFrequency()}.
 
-load_frequency() ->
+-spec loadWordFrequency() -> wordFrequencyMap().
+loadWordFrequency() ->
+    ensureFileExist(?FREQUENCY_FILE, fun () -> dumpFrequency(#{}) end),
     try file:consult(?FREQUENCY_FILE) of
-	{ok,[FreqMap]} ->
-	    FreqMap
+        {ok, [FrequencyMap]} ->
+            FrequencyMap
     catch
-	_:_ ->
-	    #{}
+        _:_ ->
+            #{}
     end.
 
-dump_frequency(FreqMap) ->
-    {ok,F} = file:open(?FREQUENCY_FILE, write),
-    io:format(F, "~p.", [FreqMap]),
-    ok = file:close(F).
+-spec ensureFileExist(string(), fun (() -> ok)) -> ok.
+ensureFileExist(FileName, HandleWhenNotExist) ->
+    case filelib:is_file(FileName) of
+        true ->
+            ok;
+        false ->
+            HandleWhenNotExist()
+    end.
 
+-spec dumpFrequency(wordFrequencyMap()) -> ok.
+dumpFrequency(FrequencyMap) ->
+    {ok, OutputFileHandler} = file:open(?FREQUENCY_FILE, [write]),
+    io:format(OutputFileHandler, "~p.", [FrequencyMap]),
+    ok = file:close(OutputFileHandler).
 
-find_words(Keys, Dict, FreqMap) when Keys =/= [] ->
-    Ws = [Word || {KeyList,Word} <- Dict, match_keys(Keys, KeyList)],
-    prepare_result(Ws, FreqMap);
-find_words([], _, _) ->
+-spec findWords([char()], wordDictionary(), wordFrequencyMap()) -> [string()].
+findWords(Keys, WordDictionary, FrequencyMap) when Keys =/= [] ->
+    WordResultList = [Word || {KeyList, Word} <- WordDictionary, matchKeys(Keys, KeyList)],
+    prepareResult(WordResultList, FrequencyMap);
+findWords([], _, _) ->
     [].
 
-prepare_result(Lst, FreqMap) ->
+-spec prepareResult([binary()], wordFrequencyMap()) -> [string()].
+prepareResult(WordResultList, FrequencyMap) ->
     R1 = lists:sort(fun(A, B) when size(A) =/= size(B) -> size(A) =< size(B);
-		       (_, _) -> true
-		    end, Lst),
+                       (_, _) -> true
+                    end, WordResultList),
     R2 = lists:sublist(R1, 10),
-    R3 = lists:sort(fun(A, B) when size(A) =:= size(B) ->
-			    freqcmp(A, B, FreqMap);
-		       (_, _) -> true
-		    end, R2),
+    R3 = lists:sort(fun(A, B) when size(A) =:= size(B) -> compareFrequency(A, B, FrequencyMap);
+                       (_, _) -> true
+                    end, R2),
     R4 = lists:map(fun binary_to_list/1, R3),
     R4.
 
-freqcmp(Word1, Word2, FreqMap) ->
-    maps:get(Word1, FreqMap, 0) > maps:get(Word2, FreqMap, 0).
+-spec compareFrequency(binary(), binary(), wordFrequencyMap()) -> boolean().
+compareFrequency(Word1, Word2, FrequencyMap) ->
+    maps:get(Word1, FrequencyMap, 0) > maps:get(Word2, FrequencyMap, 0).
 
+-type searchLoopState() :: {wordDictionary(), wordFrequencyMap()}.
 
-search_loop({Dict,FreqMap}) ->
+-spec searchLoop(searchLoopState()) -> no_return().
+searchLoop({WordDictionary, FrequencyMap} = State) ->
     receive
-	{query,Pid,Keys} ->
-	    Pid ! {words,find_words(Keys, Dict, FreqMap)},
-	    search_loop({Dict,FreqMap});
-	{use,Word} ->
-	    NewFreq = maps:update_with(list_to_binary(Word),
-				       fun(V) -> V + 1 end, 1, FreqMap),
-	    search_loop({Dict,NewFreq});
-	{stop,Pid} ->
-	    dump_frequency(FreqMap),
-	    Pid ! {?MODULE,stopped}
+        {{Pid, Ref}, Command} ->
+            case handleSearchCommand(Command, State) of
+                {reply, Result, NewState} ->
+                    Pid ! {Ref, Result},
+                    searchLoop(NewState);
+                {stop, _} ->
+                    Pid ! {Ref, stopped}
+            end;
+        {use, Word} ->
+            NewFrequency = maps:update_with(Word, fun(V) -> V + 1 end, 1, FrequencyMap),
+            searchLoop({WordDictionary, NewFrequency})
     end.
 
+-spec handleSearchCommand(any(), searchLoopState()) -> {reply, any(), searchLoopState()} | {stop, stopped}.
+handleSearchCommand({query, Keys}, {WordDictionary, FrequencyMap} = State) ->
+    Result = findWords(Keys, WordDictionary, FrequencyMap),
+    {reply, Result, State};
+handleSearchCommand(stop, _) ->
+    {stop, stopped}.
+
+-spec start_link() -> true.
 start_link() ->
-    register(?MODULE, spawn_link(fun() ->
-					 search_loop(load_words())
-				 end)).
+    register(?MODULE, spawn_link(fun() -> searchLoop(loadWordDictionary()) end)).
 
+-spec callCommand(any()) -> any().
+callCommand(Command) ->
+    Ref = erlang:make_ref(),
+    ?MODULE ! {{self(), Ref}, Command},
+    receive
+        {Ref, Result} ->
+            Result
+    end.
+
+-spec query([char()]) -> [string()].
 query(Keys) ->
-    ?MODULE ! {query,self(),Keys},
-    receive
-	{words,Words} ->
-	    Words
-    end.
+    callCommand({query, Keys}).
 
-freqcount(Word) ->
-    ?MODULE ! {use,Word}.
-
+-spec stop() -> stopped.
 stop() ->
-    ?MODULE ! {stop,self()},
-    receive
-	{?MODULE,stopped} ->
-	    stopped
-    end.
+    callCommand(stop).
 
+-spec frequencyCount(binary()) -> any().
+frequencyCount(Word) ->
+    ?MODULE ! {use, Word}.

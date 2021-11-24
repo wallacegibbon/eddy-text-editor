@@ -2,274 +2,264 @@
 
 -export([start/0]).
 
--define(COMMANDS, #{"22"=>complete,"11"=>capitalize,"12"=>upper,"13"=>lower,
-		    "14"=>join1,"16"=>join2,
-		    "33"=>undo,"32"=>redo,"66"=>find,"88"=>select,
-		    "77"=>cut,"78"=>copy,"79"=>paste,
-		    "44"=>save,"55"=>quit,"45"=>savequit}).
+-define(COMMANDS, #{"22" => complete, "11" => capitalize, "12" => upper, "13" => lower, "14" => join1, "16" => join2,
+                    "33" => undo, "32" => redo, "66" => find, "88" => select, "77" => cut, "78" => copy, "79" => paste,
+                    "44" => save, "55" => quit, "45" => saveAndQuit}).
 
--define(BASICMAP, #{$w=>$1,$e=>$2,$r=>$3,$s=>$4,$d=>$5,$f=>$6,$x=>$7,$c=>$8,
-		    $v=>$9,$b=>$0,$\s=>$\s,$g=>$\n,$t=>$\b,
-		    $3=>chmap,$2=>chmod,$4=>fn}).
+-define(BASEMAP, #{$w => $1, $e => $2, $r => $3, $s => $4, $d => $5, $f => $6, $x => $7, $c => $8, $v => $9, $b => $0,
+                   $\s => $\s, $g => $\n, $t => $\b, $3 => changeMap, $2 => changeMode, $4 => command}).
 
--define(SYM1, #{$1=>$1,$2=>$2,$3=>$3,$4=>$4,$5=>$5,
-		$6=>$6,$7=>$7,$8=>$8,$9=>$9,$0=>$0}).
+-define(MAP1, #{$1 => $1, $2 => $2, $3 => $3, $4 => $4, $5 => $5,
+                $6 => $6, $7 => $7, $8 => $8, $9 => $9, $0 => $0}).
 
--define(SYM2, #{$1=>$[,$3=>$],$4=>$(,$6=>$),$7=>${,
-		$9=>$},$2=>$",$5=>$',$8=>$.,$0=>$,}).
+-define(MAP2, #{$1 => $[, $3 => $], $4 => $(, $6 => $), $7 => ${,
+                $9 => $}, $2 => $", $5 => $', $8 => $., $0 => $, }).
 
--define(SYM3, #{$1=>$\\,$2=>$|,$3=>$/,$4=>$<,$5=>$=,
-		$6=>$>,$7=>$^,$8=>$!,$9=>$:,$0=>$;}).
+-define(MAP3, #{$1 => $\\, $2 => $|, $3 => $/, $4 => $<, $5 => $= ,
+                $6 => $>, $7 => $^, $8 => $!, $9 => $:, $0 => $;}).
 
--define(SYM4, #{$1=>$+,$2=>$-,$3=>$*,$4=>$@,$5=>$_,
-		$6=>$#,$7=>$~,$8=>$%,$9=>$$,$0=>$&}).
+-define(MAP4, #{$1 => $+, $2 => $-, $3 => $*, $4 => $@, $5 => $_,
+                $6 => $#, $7 => $~, $8 => $%, $9 => $$, $0 => $&}).
 
--define(SYM5, #{$1=>$?,$2=>$`}).
+-define(MAP5, #{$1 => $?, $2 => $`}).
 
--define(T9WINROWS, 5).
--define(T9WINCOLS, 22).
+-define(T9_WINDOW_ROWS, 5).
+-define(T9_WINDOW_COLUMNS, 22).
 
+-type eddyMode() :: t9Start | t9 | changeMap | waitCommand1 | waitCommand2 | {keyCollect, char()}.
+-type baseKeyStroke() :: integer() | changeMap | changeMode | command.
 
 %% start the key listening loop as a process.
-start_keylistener() ->
+-spec startKeyStrokeListener() -> pid().
+startKeyStrokeListener() ->
     Pid = self(),
-    spawn_link(fun() -> listen_key(t9_start, Pid, [], []) end).
+    spawn_link(fun() -> listenKeyStroke(t9Start, Pid, [], []) end).
 
-
-listen_key(Mode, Pid, Keys, Arguments) ->
-    try
-	pretranslate(cecho:getch())
-    of
-	{ok,C} ->
-	    handle_key(Mode, Pid, [C|Keys], Arguments);
-	error ->
-	    listen_key(Mode, Pid, Keys, Arguments)
+-spec listenKeyStroke(eddyMode(), pid(), [baseKeyStroke()], any()) -> no_return().
+listenKeyStroke(Mode, Pid, Keys, Arguments) ->
+    try preTranslate(cecho:getch()) of
+        {ok, Character} ->
+            handleKeyStroke(Mode, Pid, [Character | Keys], Arguments);
+        error ->
+            listenKeyStroke(Mode, Pid, Keys, Arguments)
     catch
-	exit:_ ->
-	    ok
+        exit:_ ->
+            ok
     end.
 
-%% back to t9 with double click on MAPCHANGE
-handle_key(chmap, Pid, [chmap,chmap], _) ->
-    listen_key(t9_start, Pid, [], []);
-
+%% back to t9 with double click on MAP_CHANGE
+-spec handleKeyStroke(eddyMode(), pid(), [baseKeyStroke()], any()) -> no_return().
+handleKeyStroke(changeMap, Pid, [changeMap, changeMap], _) ->
+    listenKeyStroke(t9Start, Pid, [], []);
 %% prepare map selection
-handle_key(_, Pid, [chmap|_], _) ->
-    listen_key(chmap, Pid, [chmap], []);
-
-handle_key(chmap, Pid, [N,chmap], _) when N >= $1, N =< $9 ->
-    Pid ! t9_stop,
-    listen_key({sym,N - $0}, Pid, [], []);
-
-handle_key(chmap, Pid, [_,chmap], _) ->
-    listen_key(chmap, Pid, [chmap], []);
-
+handleKeyStroke(_, Pid, [changeMap | _], _) ->
+    listenKeyStroke(changeMap, Pid, [changeMap], []);
+handleKeyStroke(changeMap, Pid, [Key, changeMap], _) when Key >= $1, Key =< $9 ->
+    Pid ! stopInput,
+    listenKeyStroke({keyCollect, Key - $0}, Pid, [], []);
+handleKeyStroke(changeMap, Pid, [_, changeMap], _) ->
+    listenKeyStroke(changeMap, Pid, [changeMap], []);
 %% command mode
-handle_key(waitcmd1, Pid, [fn,fn], OldMode) ->
-    listen_key(waitcmd1, Pid, [fn], OldMode);
-
-handle_key(Mode, Pid, [fn|_], _) ->
-    listen_key(waitcmd1, Pid, [fn], Mode);
-
-handle_key(waitcmd1, Pid, [A,fn], OldMode) ->
-    listen_key(waitcmd2, Pid, [A,fn], OldMode);
-
+handleKeyStroke(waitCommand1, Pid, [command, command], OldMode) ->
+    listenKeyStroke(waitCommand1, Pid, [command], OldMode);
+handleKeyStroke(Mode, Pid, [command | _], _) ->
+    listenKeyStroke(waitCommand1, Pid, [command], Mode);
+handleKeyStroke(waitCommand1, Pid, [A, command], OldMode) ->
+    listenKeyStroke(waitCommand2, Pid, [A, command], OldMode);
 %% this is where this process may exit
-handle_key(waitcmd2, Pid, [B,A,fn], OldMode) ->
-    Pid ! {cmd,translatecmd(A, B)},
-    listen_key(OldMode, Pid, [], []);
-
+handleKeyStroke(waitCommand2, Pid, [B, A, command], OldMode) ->
+    Pid ! {command, translateCommand(A, B)},
+    listenKeyStroke(OldMode, Pid, [], []);
 %% in any input mode, a direct enter or space is self inserting
-handle_key(Mode, Pid, [C], []) when C =:= $\s; C =:= $\n ->
-    Pid ! {word_insert,[C]},
-    listen_key(Mode, Pid, [], []);
-
+handleKeyStroke(Mode, Pid, [C], []) when C =:= $\s; C =:= $\n ->
+    Pid ! {insertCharacter, [C]},
+    listenKeyStroke(Mode, Pid, [], []);
 %% T9 input method
-handle_key(t9_start, Pid, [C]=Keys, _) when C >= $2, C =< $9 ->
-    Pid ! t9_start,
+handleKeyStroke(t9Start, Pid, [C] = Keys, _) when C >= $2, C =< $9 ->
+    Pid ! startInput,
     Options = wordsvc:query(Keys),
-    sync_options(Pid, Options, Keys),
-    listen_key(t9, Pid, Keys, Options);
-
-handle_key(t9_start, Pid, [_], _) ->
-    listen_key(t9_start, Pid, [], []);
-
-handle_key(t9, Pid, [C|_]=Keys, _) when C >= $2, C =< $9 ->
+    syncWordOptions(Pid, Options, Keys),
+    listenKeyStroke(t9, Pid, Keys, Options);
+handleKeyStroke(t9Start, Pid, [_], _) ->
+    listenKeyStroke(t9Start, Pid, [], []);
+handleKeyStroke(t9, Pid, [C | _] = Keys, _) when C >= $2, C =< $9 ->
     Options = wordsvc:query(lists:reverse(Keys)),
-    sync_options(Pid, Options, Keys),
-    listen_key(t9, Pid, Keys, Options);
-
-handle_key(t9, Pid, [$1|RKeys], [W|Rest]) ->
+    syncWordOptions(Pid, Options, Keys),
+    listenKeyStroke(t9, Pid, Keys, Options);
+handleKeyStroke(t9, Pid, [$1 | RKeys], [W | Rest]) ->
     Options = Rest ++ [W],
-    sync_options(Pid, Options, RKeys),
-    listen_key(t9, Pid, RKeys, Options);
-
-handle_key(t9, Pid, [$1], []) ->
-    listen_key(t9, Pid, [], []);
-
-handle_key(t9, Pid, [$0|RKeys], Options) ->
-    listen_key(t9, Pid, RKeys, Options);
-
+    syncWordOptions(Pid, Options, RKeys),
+    listenKeyStroke(t9, Pid, RKeys, Options);
+handleKeyStroke(t9, Pid, [$1], []) ->
+    listenKeyStroke(t9, Pid, [], []);
+handleKeyStroke(t9, Pid, [$0 | RKeys], Options) ->
+    listenKeyStroke(t9, Pid, RKeys, Options);
 %% when the word is selected, empty the word list and options
-handle_key(t9, Pid, [C|_], [Word|_]) when C =:= $\s; C =:= $\n ->
-    Pid ! t9_stop,
-    Pid ! {word_insert,Word},
-    wordsvc:freqcount(Word),
-    listen_key(t9_start, Pid, [], []);
-
-handle_key(t9, Pid, [$\b,_], _) ->
-    Pid ! t9_stop,
-    listen_key(t9_start, Pid, [], []);
-
-handle_key(t9, Pid, [$\b,_|Keys], _) ->
+handleKeyStroke(t9, Pid, [C | _], [Word | _]) when C =:= $\s; C =:= $\n ->
+    Pid ! stopInput,
+    Pid ! {insertCharacter, Word},
+    wordsvc:frequencyCount(list_to_binary(Word)),
+    listenKeyStroke(t9Start, Pid, [], []);
+handleKeyStroke(t9, Pid, [$\b, _], _) ->
+    Pid ! stopInput,
+    listenKeyStroke(t9Start, Pid, [], []);
+handleKeyStroke(t9, Pid, [$\b, _ | Keys], _) ->
     Options = wordsvc:query(lists:reverse(Keys)),
-    sync_options(Pid, Options, Keys),
-    listen_key(t9, Pid, Keys, Options);
-
-handle_key(t9, Pid, [$\b], _) ->
-    listen_key(t9_start, Pid, [], []);
-
-handle_key(Mode, Pid, [$\b], []) when Mode =/= t9 ->
-    Pid ! delete_char,
-    listen_key(Mode, Pid, [], []);
-
+    syncWordOptions(Pid, Options, Keys),
+    listenKeyStroke(t9, Pid, Keys, Options);
+handleKeyStroke(t9, Pid, [$\b], _) ->
+    listenKeyStroke(t9Start, Pid, [], []);
+handleKeyStroke(Mode, Pid, [$\b], []) when Mode =/= t9 ->
+    Pid ! deleteCharacter,
+    listenKeyStroke(Mode, Pid, [], []);
 %% direct key maps
-handle_key({sym,N}=Mode, Pid, [C], []) ->
-    Pid ! {word_insert,[translatesym(C, N)]},
-    listen_key(Mode, Pid, [], []);
-
+handleKeyStroke({keyCollect, N} = Mode, Pid, [C], []) ->
+    Pid ! {insertCharacter, [translateMap(C, N)]},
+    listenKeyStroke(Mode, Pid, [], []);
 %% there should not be any situation left
-handle_key(Mode, Pid, Keys, Options) ->
-    Pid ! {error,{Mode,Keys,Options}},
-    listen_key(Mode, Pid, [], []).
+handleKeyStroke(Mode, Pid, Keys, Options) ->
+    Pid ! {error, {Mode, Keys, Options}},
+    listenKeyStroke(Mode, Pid, [], []).
 
+-spec syncWordOptions(pid(), [string()], [baseKeyStroke()]) -> ok.
+syncWordOptions(Pid, WordOptionList, Keys) ->
+    Pid ! {wordsOptions, {WordOptionList, lists:reverse(Keys)}},
+    ok.
 
-sync_options(Pid, Options, Keys) ->
-    Pid ! {word_option,{Options,lists:reverse(Keys)}}.
-
-char_to_lower(C) when C >= $A, C =< $Z ->
-    C + ($a - $A);
-char_to_lower(C) ->
+-spec characterLowerCase(char()) -> char().
+characterLowerCase(C) when C >= $A, C =< $Z ->
+    C - $A + $a;
+characterLowerCase(C) ->
     C.
 
-pretranslate(C) ->
-    maps:find(char_to_lower(C), ?BASICMAP).
+-spec preTranslate(char()) -> {ok, baseKeyStroke()} | error.
+preTranslate(C) ->
+    maps:find(characterLowerCase(C), ?BASEMAP).
 
-translatecmd(Key1, Key2) ->
-    maps:get([Key1,Key2], ?COMMANDS, unknown).
+-spec translateCommand(char(), char()) -> atom().
+translateCommand(Key1, Key2) ->
+    maps:get([Key1, Key2], ?COMMANDS, unknown).
 
-translatesym(Key, N) ->
-    maps:get(Key, get_symmap(N), $\s).
+-spec translateMap(char(), integer()) -> char().
+translateMap(Key, N) ->
+    maps:get(Key, getMapOfIndex(N), $\s).
 
-get_symmap(1) -> ?SYM1;
-get_symmap(2) -> ?SYM2;
-get_symmap(3) -> ?SYM3;
-get_symmap(4) -> ?SYM4;
-get_symmap(5) -> ?SYM5;
-get_symmap(_) -> #{}.
+-spec getMapOfIndex(integer()) -> #{char() => char()}.
+getMapOfIndex(1) -> ?MAP1;
+getMapOfIndex(2) -> ?MAP2;
+getMapOfIndex(3) -> ?MAP3;
+getMapOfIndex(4) -> ?MAP4;
+getMapOfIndex(5) -> ?MAP5;
+getMapOfIndex(_) -> #{}.
 
+-type cursesWindow() :: any().
+-type mainLoopState() :: #{t9window => cursesWindow()}.
 
-new_optionwin() ->
-    {Row,Col} = cecho:getyx(),
+-spec newOptionWindow() -> cursesWindow().
+newOptionWindow() ->
+    {Row, Col} = cecho:getyx(),
     cecho:curs_set(0),
-    W = cecho:newwin(?T9WINROWS, ?T9WINCOLS, Row+1, Col),
+    W = cecho:newwin(?T9_WINDOW_ROWS, ?T9_WINDOW_COLUMNS, Row+1, Col),
     cecho:wborder(W, $|, $|, $-, $-, $+, $+, $+, $+),
     W.
 
-del_optionwin(T9Win) ->
+-spec deleteOptionWindow(cursesWindow()) -> ok.
+deleteOptionWindow(T9Win) ->
     cecho:delwin(T9Win),
     cecho:curs_set(1),
     ok.
 
-draw_options(#{t9window:=T9Win}=State, Options) ->
-    {Row,Col} = cecho:getyx(),
+-spec drawWordOptions([string()], mainLoopState()) -> ok.
+drawWordOptions(Options, #{t9window := T9Win} = State) ->
+    {Row, Col} = cecho:getyx(),
     cecho:werase(T9Win),
-    draw_option1(State, lists:sublist(Options, ?T9WINROWS)),
-    cecho:move(Row, Col).
+    drawWordOptionList(lists:sublist(Options, ?T9_WINDOW_ROWS), State),
+    cecho:move(Row, Col),
+    ok.
 
-draw_option1(#{t9window:=T9Win}=State, [Word|RestOptions]) ->
-    {Row,_} = cecho:getyx(T9Win),
+-spec drawWordOptionList([string()], mainLoopState()) -> ok.
+drawWordOptionList([Word | RestOptions], #{t9window := T9Win} = State) ->
+    {Row, _} = cecho:getyx(T9Win),
     cecho:waddstr(T9Win, Word),
     cecho:wmove(T9Win, Row+1, 0),
-    draw_option1(State, RestOptions);
-draw_option1(#{t9window:=T9Win}, []) ->
+    drawWordOptionList(RestOptions, State);
+drawWordOptionList([], #{t9window := T9Win}) ->
     cecho:wmove(T9Win, 0, 0),
-    cecho:wrefresh(T9Win).
+    cecho:wrefresh(T9Win),
+    ok.
 
-show_msg(Msg) ->
-    {MRow,_} = cecho:getmaxyx(),
-    {Row,Col} = cecho:getyx(),
+-spec showMessage(any()) -> ok.
+showMessage(Msg) ->
+    {MRow, _} = cecho:getmaxyx(),
+    {Row, Col} = cecho:getyx(),
     cecho:mvaddstr(MRow-1, 0, Msg),
     cecho:move(Row, Col),
-    cecho:refresh().
+    cecho:refresh(),
+    ok.
 
-
-main_handler({cmd,Quit}, _) when Quit =:= quit; Quit =:= savequit ->
+-spec mainHandler(any(), mainLoopState()) -> {ok, mainLoopState()} | stopped.
+mainHandler({command, Quit}, _) when Quit =:= quit; Quit =:= saveAndQuit ->
     cleanup(),
     stopped;
-
-main_handler({cmd,Cmd}, State) ->
-    show_msg(io_lib:format("command: ~w", [Cmd])),
-    {ok,State};
-
-main_handler(t9_start, State) ->
-    {ok,State#{t9window=>new_optionwin()}};
-
-main_handler(t9_stop, #{t9window:=T9Win}=State) ->
-    del_optionwin(T9Win),
-    {ok,maps:without([t9window], State)};
-main_handler(t9_stop, State) ->
-    {ok,State};
-
-main_handler({word_option,{[],Keys}}, State) ->
-    draw_options(State, [Keys]),
-    {ok,State};
-main_handler({word_option,{Options,_}}, State) ->
-    draw_options(State, Options),
-    {ok,State};
-
-main_handler({word_insert,Str}, State) ->
+mainHandler({command, Cmd}, State) ->
+    showMessage(io_lib:format("command: ~w", [Cmd])),
+    {ok, State};
+mainHandler(startInput, State) ->
+    {ok, State#{t9window => newOptionWindow()}};
+mainHandler(stopInput, #{t9window := T9Win} = State) ->
+    deleteOptionWindow(T9Win),
+    {ok, maps:without([t9window], State)};
+mainHandler({wordsOptions, {[], Keys}}, State) ->
+    drawWordOptions([Keys], State),
+    {ok, State};
+mainHandler({wordsOptions, {Options, _}}, State) ->
+    drawWordOptions(Options, State),
+    {ok, State};
+mainHandler({insertCharacter, Str}, State) ->
     cecho:addstr(Str),
     cecho:refresh(),
-    {ok,State};
-
-main_handler(delete_char, State) ->
+    {ok, State};
+mainHandler(deleteCharacter, State) ->
     %% todo
-    {ok,State};
+    {ok, State};
+mainHandler({error, ErrorInfo}, State) ->
+    showMessage(io_lib:format("error: ~w", [ErrorInfo])),
+    {ok, State};
+mainHandler(_, State) ->
+    {ok, State}.
 
-main_handler({error,I}, State) ->
-    show_msg(io_lib:format("error: ~w", [I])),
-    {ok,State}.
-
-
-main_loop(State) ->
+-spec mainLoop(#{}) -> no_return().
+mainLoop(State) ->
     receive
-	Anything ->
-	    case main_handler(Anything, State) of
-		{ok,NewState} ->
-		    main_loop(NewState);
-		stopped ->
-		    stopped
-	    end
+        Anything ->
+            case mainHandler(Anything, State) of
+                {ok, NewState} ->
+                    mainLoop(NewState);
+                stopped ->
+                    stopped
+            end
     end.
 
+-spec cleanup() -> ok.
 cleanup() ->
     wordsvc:stop(),
     ok = application:stop(cecho),
     ok.
 
-fill_screen(Char) ->
-    {MRow,MCol} = cecho:getmaxyx(),
+-spec fullScreen(char()) -> ok.
+fullScreen(Char) ->
+    {MRow, MCol} = cecho:getmaxyx(),
     Chars = lists:map(fun(_) -> Char end, lists:seq(1, MCol * MRow)),
     cecho:mvaddstr(0, 0, Chars),
     cecho:move(0, 0),
-    cecho:refresh().
+    cecho:refresh(),
+    ok.
 
+-spec start() -> no_return().
 start() ->
     wordsvc:start_link(),
     ok = application:start(cecho),
     ok = cecho:noecho(),
-    fill_screen($.),
-    start_keylistener(),
-    main_loop(#{}).
-
+%%    fullScreen($.),
+    startKeyStrokeListener(),
+    mainLoop(#{}).
