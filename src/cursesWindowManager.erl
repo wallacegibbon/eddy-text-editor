@@ -9,22 +9,24 @@
 -type windowHandle() :: any() | none.
 -record(cursesWindowManagerState, {window = none :: windowHandle()}).
 
--define(WINDOW_ROWS, 5).
+-define(WINDOW_ROWS, 8).
 -define(WINDOW_COLUMNS, 22).
 
-handle_cast(startInput, #cursesWindowManagerState{} = State) ->
+handle_cast(startInput, State) ->
     {noreply, State#cursesWindowManagerState{window = newOptionWindow()}};
-handle_cast(stopInput, #cursesWindowManagerState{window = WindowHandle} = State) ->
+handle_cast(stopInput, #cursesWindowManagerState{window = WindowHandle} = State) when WindowHandle =/= none ->
     deleteOptionWindow(WindowHandle),
     {noreply, State#cursesWindowManagerState{window = none}};
-handle_cast({wordsOptions, {Options, _}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
-    drawWordOptions(Options, WindowHandle),
+handle_cast(stopInput, State) ->
     {noreply, State};
 %% when no words are found, show the keys directly
 handle_cast({wordsOptions, {[], Keys}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
     drawWordOptions([Keys], WindowHandle),
     {noreply, State};
-handle_cast({insertString, String}, #cursesWindowManagerState{} = State) ->
+handle_cast({wordsOptions, {Options, _}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
+    drawWordOptions(Options, WindowHandle),
+    {noreply, State};
+handle_cast({insertString, String}, State) ->
     cecho:addstr(String),
     cecho:refresh(),
     {noreply, State};
@@ -34,14 +36,14 @@ handle_cast(deleteCharacter, State) ->
 handle_cast({error, ErrorInfo}, State) ->
     showMessage(io_lib:format("error: ~w", [ErrorInfo])),
     {noreply, State};
-handle_cast({command, Quit}, #cursesWindowManagerState{} = State) when Quit =:= quit; Quit =:= saveAndQuit ->
+handle_cast({command, Quit}, State) when Quit =:= quit; Quit =:= saveAndQuit ->
     ok = application:stop(cecho),
     {stop, normal, State};
-handle_cast({command, Command}, #cursesWindowManagerState{} = State) ->
+handle_cast({command, Command}, State) ->
     showMessage(io_lib:format("command: ~w", [Command])),
     {noreply, State}.
 
-handle_call(_Request, _From, #cursesWindowManagerState{} = State) ->
+handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
 init([]) ->
@@ -50,7 +52,7 @@ init([]) ->
     spawn_link(fun () -> keyListener() end),
     {ok, #cursesWindowManagerState{}}.
 
--spec keyListener() -> ok.
+-spec keyListener() -> no_return().
 keyListener() ->
     try t9InputUtil:preTranslate(cecho:getch()) of
         {ok, Character} ->
@@ -60,6 +62,8 @@ keyListener() ->
     catch
         exit:_ ->
             ok
+    after
+        keyListener()
     end.
 
 start_link() ->
@@ -69,7 +73,7 @@ start_link() ->
 newOptionWindow() ->
     {Row, Col} = cecho:getyx(),
     cecho:curs_set(0),
-    W = cecho:newwin(?WINDOW_ROWS, ?WINDOW_COLUMNS, Row+1, Col),
+    W = cecho:newwin(?WINDOW_ROWS, ?WINDOW_COLUMNS, Row + 1, Col),
     cecho:wborder(W, $|, $|, $-, $-, $+, $+, $+, $+),
     W.
 
@@ -90,7 +94,7 @@ drawWordOptions(Options, WindowHandle) ->
 drawWordOptionList([Word | RestOptions], WindowHandle) ->
     {Row, _} = cecho:getyx(WindowHandle),
     cecho:waddstr(WindowHandle, Word),
-    cecho:wmove(WindowHandle, Row+1, 0),
+    cecho:wmove(WindowHandle, Row + 1, 0),
     drawWordOptionList(RestOptions, WindowHandle);
 drawWordOptionList([], WindowHandle) ->
     cecho:wmove(WindowHandle, 0, 0),

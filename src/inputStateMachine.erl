@@ -28,14 +28,15 @@ handle_event(cast, Key2, waitCommand2, {[Key1], PreviousState, PreviousData}) ->
 
 %% Go back to t9 insert mode by double click on <MAP CHANGE> key.
 handle_event(cast, changeMapKey, changeMap, _) ->
+    gen_server:cast(cursesWindowManager, stopInput),
     {next_state, t9Start, {[], []}};
+handle_event(cast, changeMapKey, _, Data) ->
+    {next_state, changeMap, Data};
 handle_event(cast, Key, changeMap, _) when Key >= $1, Key =< $9 ->
     gen_server:cast(cursesWindowManager, stopInput),
     {next_state, directInsert, Key - $0};
 handle_event(cast, _, changeMap, Data) ->
     {next_state, changeMap, Data};
-handle_event(cast, changeMapKey, _, _) ->
-    {next_state, changeMap, 0};
 
 %% In direct-insert mode, the data is just an integer (key map index)
 handle_event(cast, Key, directInsert, MapIndex) ->
@@ -47,13 +48,12 @@ handle_event(cast, Key, t9Start, _) when Key >= $2, Key =< $9 ->
     gen_server:cast(cursesWindowManager, startInput),
     Options = keyToWordService:query([Key]),
     syncWordOptions(Options, [Key]),
-    io:format(">>>>~p~n", [Options]),
     {next_state, t9Insert, {[Key], Options}};
+handle_event(cast, $\b, t9Start, Data) ->
+    {next_state, t9Start, Data};
 handle_event(cast, Key, t9Insert, {CollectedKeys, _}) when Key >= $2, Key =< $9 ->
     Keys = [Key | CollectedKeys],
-    io:format(">>>>>>>> ~p~n", [Keys]),
     Options = keyToWordService:query(lists:reverse(Keys)),
-    io:format(">>>>~p~n", [Options]),
     syncWordOptions(Options, Keys),
     {next_state, t9Insert, {Keys, Options}};
 handle_event(cast, $1, t9Insert, {Keys, [W | RestWords]}) ->
@@ -63,7 +63,7 @@ handle_event(cast, $1, t9Insert, {Keys, [W | RestWords]}) ->
 handle_event(cast, $1, t9Insert, {[], []} = Data) ->
     {next_state, t9Insert, Data};
 %% when the word is selected, empty the word list and options
-handle_event(cast, Key, t9Insert, {[], [Word | _]}) when Key =:= $\s; Key =:= $\n ->
+handle_event(cast, Key, t9Insert, {_, [Word | _]}) when Key =:= $\s; Key =:= $\n ->
     gen_server:cast(cursesWindowManager, stopInput),
     gen_server:cast(cursesWindowManager, {insertString, Word}),
     keyToWordService:frequencyCount(list_to_binary(Word)),
