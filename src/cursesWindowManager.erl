@@ -24,22 +24,22 @@ handle_cast({wordsOptions, {Options, _}}, #cursesWindowManagerState{window = Win
 handle_cast({wordsOptions, {[], Keys}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
     drawWordOptions([Keys], WindowHandle),
     {noreply, State};
-handle_cast({command, Command}, #cursesWindowManagerState{} = State) ->
-    showMessage(io_lib:format("command: ~w", [Command])),
-    {noreply, State};
-handle_cast({insertCharacter, String}, #cursesWindowManagerState{} = State) ->
+handle_cast({insertString, String}, #cursesWindowManagerState{} = State) ->
     cecho:addstr(String),
     cecho:refresh(),
     {noreply, State};
 handle_cast(deleteCharacter, State) ->
     %% todo
-    {ok, State};
+    {noreply, State};
 handle_cast({error, ErrorInfo}, State) ->
     showMessage(io_lib:format("error: ~w", [ErrorInfo])),
-    {ok, State};
+    {noreply, State};
 handle_cast({command, Quit}, #cursesWindowManagerState{} = State) when Quit =:= quit; Quit =:= saveAndQuit ->
     ok = application:stop(cecho),
-    {stop, normal, State}.
+    {stop, normal, State};
+handle_cast({command, Command}, #cursesWindowManagerState{} = State) ->
+    showMessage(io_lib:format("command: ~w", [Command])),
+    {noreply, State}.
 
 handle_call(_Request, _From, #cursesWindowManagerState{} = State) ->
     {reply, ok, State}.
@@ -65,7 +65,7 @@ keyListener() ->
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
--spec newOptionWindow() -> cursesWindow().
+-spec newOptionWindow() -> windowHandle().
 newOptionWindow() ->
     {Row, Col} = cecho:getyx(),
     cecho:curs_set(0),
@@ -73,7 +73,7 @@ newOptionWindow() ->
     cecho:wborder(W, $|, $|, $-, $-, $+, $+, $+, $+),
     W.
 
--spec deleteOptionWindow(cursesWindow()) -> ok.
+-spec deleteOptionWindow(windowHandle()) -> ok.
 deleteOptionWindow(T9Win) ->
     cecho:delwin(T9Win),
     cecho:curs_set(1),

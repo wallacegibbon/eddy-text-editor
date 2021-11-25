@@ -9,7 +9,7 @@
                     "44" => save, "55" => quit, "45" => saveAndQuit}).
 
 -define(BASEMAP, #{$w => $1, $e => $2, $r => $3, $s => $4, $d => $5, $f => $6, $x => $7, $c => $8, $v => $9, $b => $0,
-                   $\s => $\s, $g => $\n, $t => $\b, $3 => changeMap, $2 => changeMode, $4 => command}).
+                   $\s => $\s, $g => $\n, $t => $\b, $3 => changeMapKey, $2 => changeModeKey, $4 => commandKey}).
 
 -define(MAP1, #{$1 => $1, $2 => $2, $3 => $3, $4 => $4, $5 => $5,
                 $6 => $6, $7 => $7, $8 => $8, $9 => $9, $0 => $0}).
