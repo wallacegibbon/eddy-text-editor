@@ -1,8 +1,8 @@
 -module(cursesWindowManager).
 
--behaviour(gen_server).
+-behaviour(gen_event).
 
--export([init/1, handle_call/3, handle_cast/2, start_link/0]).
+-export([init/1, handle_event/2, handle_call/2, start_link/0]).
 
 -define(SERVER, ?MODULE).
 
@@ -12,39 +12,39 @@
 -define(WINDOW_ROWS, 8).
 -define(WINDOW_COLUMNS, 22).
 
-handle_cast(startInput, State) ->
-    {noreply, State#cursesWindowManagerState{window = newOptionWindow()}};
-handle_cast(stopInput, #cursesWindowManagerState{window = WindowHandle} = State) when WindowHandle =/= none ->
+handle_event(startInput, State) ->
+    {ok, State#cursesWindowManagerState{window = newOptionWindow()}};
+handle_event(stopInput, #cursesWindowManagerState{window = WindowHandle} = State) when WindowHandle =/= none ->
     deleteOptionWindow(WindowHandle),
-    {noreply, State#cursesWindowManagerState{window = none}};
-handle_cast(stopInput, State) ->
-    {noreply, State};
+    {ok, State#cursesWindowManagerState{window = none}};
+handle_event(stopInput, State) ->
+    {ok, State};
 %% when no words are found, show the keys directly
-handle_cast({wordsOptions, {[], Keys}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
+handle_event({wordsOptions, {[], Keys}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
     drawWordOptions([Keys], WindowHandle),
-    {noreply, State};
-handle_cast({wordsOptions, {Options, _}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
+    {ok, State};
+handle_event({wordsOptions, {Options, _}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
     drawWordOptions(Options, WindowHandle),
-    {noreply, State};
-handle_cast({insertString, String}, State) ->
+    {ok, State};
+handle_event({insertString, String}, State) ->
     cecho:addstr(String),
     cecho:refresh(),
-    {noreply, State};
-handle_cast(deleteCharacter, State) ->
+    {ok, State};
+handle_event(deleteCharacter, State) ->
     %% todo
-    {noreply, State};
-handle_cast({error, ErrorInfo}, State) ->
+    {ok, State};
+handle_event({error, ErrorInfo}, State) ->
     showMessage(io_lib:format("error: ~w", [ErrorInfo])),
-    {noreply, State};
-handle_cast({command, Quit}, State) when Quit =:= quit; Quit =:= saveAndQuit ->
+    {ok, State};
+handle_event({command, Quit}, State) when Quit =:= quit; Quit =:= saveAndQuit ->
     ok = application:stop(cecho),
     {stop, normal, State};
-handle_cast({command, Command}, State) ->
+handle_event({command, Command}, State) ->
     showMessage(io_lib:format("command: ~w", [Command])),
-    {noreply, State}.
+    {ok, State}.
 
-handle_call(_Request, _From, State) ->
-    {reply, ok, State}.
+handle_call(_Request, State) ->
+    {ok, ok, State}.
 
 init([]) ->
     ok = application:start(cecho),
