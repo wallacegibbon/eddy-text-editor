@@ -2,7 +2,7 @@
 
 -behaviour(gen_event).
 
--export([init/1, handle_event/2, handle_call/2, start_link/0]).
+-export([init/1, handle_event/2, handle_call/2]).
 
 -define(SERVER, ?MODULE).
 
@@ -65,9 +65,6 @@ keyListener() ->
     after
         keyListener()
     end.
-
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 -spec newOptionWindow() -> windowHandle().
 newOptionWindow() ->

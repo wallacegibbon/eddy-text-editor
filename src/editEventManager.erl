@@ -1,17 +1,15 @@
 -module(editEventManager).
 
--export([start_link/0, add_handler/1, delete_handler/1, publish/1]).
+-export([start/0, add_handler/1, delete_handler/1, publish/1]).
 
--define(SERVER, ?MODULE).
-
-start_link() ->
-    gen_event:start_link({local, ?SERVER}).
+start() ->
+    gen_event:start({local, ?MODULE}).
 
 add_handler(Handler) ->
-    gen_event:add_handler(?SERVER, Handler, []).
+    gen_event:add_handler(?MODULE, Handler, []).
 
 delete_handler(Handler) ->
-    gen_event:delete_handler(?SERVER, Handler, []).
+    gen_event:delete_handler(?MODULE, Handler, []).
 
 publish(Message) ->
-    gen_event:notify(?SERVER, Message).
+    gen_event:notify(?MODULE, Message).
