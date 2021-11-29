@@ -2,9 +2,7 @@
 
 -behaviour(gen_event).
 
--export([init/1, handle_event/2, handle_call/2]).
-
--define(SERVER, ?MODULE).
+-export([init/1, handle_event/2, handle_call/2, terminate/2]).
 
 -type windowHandle() :: any() | none.
 -record(cursesWindowManagerState, {window = none :: windowHandle()}).
@@ -36,9 +34,8 @@ handle_event(deleteCharacter, State) ->
 handle_event({error, ErrorInfo}, State) ->
     showMessage(io_lib:format("error: ~w", [ErrorInfo])),
     {ok, State};
-handle_event({command, Quit}, State) when Quit =:= quit; Quit =:= saveAndQuit ->
-    ok = application:stop(cecho),
-    {stop, normal, State};
+handle_event({command, Quit}, _) when Quit =:= quit; Quit =:= saveAndQuit ->
+    remove_handler;
 handle_event({command, Command}, State) ->
     showMessage(io_lib:format("command: ~w", [Command])),
     {ok, State}.
@@ -51,6 +48,10 @@ init([]) ->
     ok = cecho:noecho(),
     spawn_link(fun () -> keyListener() end),
     {ok, #cursesWindowManagerState{}}.
+
+terminate(_, _) ->
+    ok = keyToWordService:stop(),
+    ok = application:stop(cecho).
 
 -spec keyListener() -> no_return().
 keyListener() ->

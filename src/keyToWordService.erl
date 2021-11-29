@@ -2,9 +2,10 @@
 
 -behaviour(gen_server).
 
--export([init/1, handle_call/3, handle_cast/2, start_link/0, query/1, stop/0, frequencyCount/1]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, start_link/0, query/1, frequencyCount/1, stop/0]).
 
 -define(SERVER, ?MODULE).
+-define(SAVE_FREQUENCY_MAP_PERIOD, 10000).
 
 %-type t9KeyStroke() :: $2..$9.
 -type t9KeyStroke() :: integer().
@@ -12,7 +13,7 @@
 -type wordDictionaryItem() :: {[t9KeyStroke()], binary()}.
 -type wordDictionary() :: [wordDictionaryItem()].
 
--record(keyToWordsServiceState, {wordDictionary :: wordDictionary(), wordFrequencyMap :: wordFrequencyMap()}).
+-record(keyToWordsServiceState, {wordDictionary :: wordDictionary(), wordFrequencyMap :: wordFrequencyMap(), wordFrequencyChanged :: boolean()}).
 
 -define(WORDS_FILE, "./words.txt").
 %-define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
@@ -23,31 +24,42 @@ handle_call({query, Keys}, _From, #keyToWordsServiceState{wordDictionary = WordD
 
 handle_cast({use, Word}, #keyToWordsServiceState{wordFrequencyMap = FrequencyMap} = State) ->
     NewFrequencyMap = maps:update_with(Word, fun(V) -> V + 1 end, 1, FrequencyMap),
-    {noreply, State#keyToWordsServiceState{wordFrequencyMap = NewFrequencyMap}};
-handle_cast(stop, #keyToWordsServiceState{wordFrequencyMap = FrequencyMap} = State) ->
+    {noreply, State#keyToWordsServiceState{wordFrequencyMap = NewFrequencyMap, wordFrequencyChanged = true}}.
+
+handle_info(saveFrequencyMap, #keyToWordsServiceState{wordFrequencyMap = FrequencyMap, wordFrequencyChanged = true} = State) ->
     dumpFrequency(FrequencyMap),
-    {stop, normal, State}.
+    erlang:send_after(?SAVE_FREQUENCY_MAP_PERIOD, ?SERVER, saveFrequencyMap),
+    {noreply, State#keyToWordsServiceState{wordFrequencyChanged = false}};
+handle_info(saveFrequencyMap, #keyToWordsServiceState{wordFrequencyChanged = false} = State) ->
+    erlang:send_after(?SAVE_FREQUENCY_MAP_PERIOD, ?SERVER, saveFrequencyMap),
+    {noreply, State};
+handle_info(_, State) ->
+    {noreply, State}.
+
+terminate(_Reason, #keyToWordsServiceState{wordFrequencyMap = FrequencyMap}) ->
+    dumpFrequency(FrequencyMap).
 
 -spec init([]) -> {ok, #keyToWordsServiceState{}}.
 init([]) ->
+    erlang:send_after(?SAVE_FREQUENCY_MAP_PERIOD, ?SERVER, saveFrequencyMap),
     {ok, WordRowsText} = file:read_file(?WORDS_FILE),
     WordDictionary = buildWordDictionary(WordRowsText, []),
-    {ok, #keyToWordsServiceState{wordDictionary = WordDictionary, wordFrequencyMap = loadWordFrequency()}}.
+    {ok, #keyToWordsServiceState{wordDictionary = WordDictionary, wordFrequencyMap = loadWordFrequency(), wordFrequencyChanged = false}}.
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 -spec query([char()]) -> [string()].
 query(Keys) ->
-    gen_server:call(?MODULE, {query, Keys}).
+    gen_server:call(?SERVER, {query, Keys}).
 
 -spec frequencyCount(binary()) -> ok.
 frequencyCount(Word) ->
-    gen_server:cast(?MODULE, {use, Word}).
+    gen_server:cast(?SERVER, {use, Word}).
 
 -spec stop() -> ok.
 stop() ->
-    gen_server:cast(?MODULE, stop).
+    gen_server:stop(?SERVER).
 
 %% In the T9 input method, 2 <-> abc, 3 <-> def, 4 <-> ghi, 5 <-> jkl, 6 <-> mno, 7 <-> pqrs, 8 <-> tuv, 9 <-> wxyz
 -spec characterListToKeyList([char()]) -> [t9KeyStroke()].
