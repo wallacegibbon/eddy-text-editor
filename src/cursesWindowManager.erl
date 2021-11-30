@@ -5,28 +5,28 @@
 -export([init/1, handle_event/2, handle_call/2, terminate/2]).
 
 -type windowHandle() :: any() | none.
--record(cursesWindowManagerState, {window = none :: windowHandle()}).
+-type cursesWindowManagerState() :: #{window => windowHandle()}.
 
 -define(WINDOW_ROWS, 8).
 -define(WINDOW_COLUMNS, 22).
 
-handle_event(startInput, State) ->
-    {ok, State#cursesWindowManagerState{window = newOptionWindow()}};
-handle_event(stopInput, #cursesWindowManagerState{window = WindowHandle} = State) when WindowHandle =/= none ->
-    deleteOptionWindow(WindowHandle),
-    {ok, State#cursesWindowManagerState{window = none}};
-handle_event(stopInput, State) ->
-    {ok, State};
 %% when no words are found, show the keys directly
-handle_event({wordsOptions, {[], Keys}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
+handle_event({wordsOptions, {[], Keys}}, #{window := WindowHandle} = State) ->
     drawWordOptions([Keys], WindowHandle),
     {ok, State};
-handle_event({wordsOptions, {Options, _}}, #cursesWindowManagerState{window = WindowHandle} = State) ->
+handle_event({wordsOptions, {Options, _}}, #{window := WindowHandle} = State) ->
     drawWordOptions(Options, WindowHandle),
     {ok, State};
 handle_event({insertString, String}, State) ->
     cecho:addstr(String),
     cecho:refresh(),
+    {ok, State};
+handle_event(startInput, State) ->
+    {ok, State#{window => newOptionWindow()}};
+handle_event(stopInput, #{window := WindowHandle} = State) when WindowHandle =/= none ->
+    deleteOptionWindow(WindowHandle),
+    {ok, State#{window := none}};
+handle_event(stopInput, State) ->
     {ok, State};
 handle_event(deleteCharacter, State) ->
     %% todo
@@ -43,11 +43,12 @@ handle_event({command, Command}, State) ->
 handle_call(_Request, State) ->
     {ok, ok, State}.
 
+-spec init([]) -> {ok, cursesWindowManagerState()}.
 init([]) ->
     ok = application:start(cecho),
     ok = cecho:noecho(),
     spawn_link(fun () -> keyListener() end),
-    {ok, #cursesWindowManagerState{}}.
+    {ok, #{window => none}}.
 
 terminate(_, _) ->
     ok = keyToWordService:stop(),

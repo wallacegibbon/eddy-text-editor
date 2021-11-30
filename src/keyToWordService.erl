@@ -13,38 +13,38 @@
 -type wordDictionaryItem() :: {[t9KeyStroke()], binary()}.
 -type wordDictionary() :: [wordDictionaryItem()].
 
--record(keyToWordsServiceState, {wordDictionary :: wordDictionary(), wordFrequencyMap :: wordFrequencyMap(), wordFrequencyChanged :: boolean()}).
+-type keyToWordsServiceState() :: #{wordDictionary => wordDictionary(), wordFrequencyMap => wordFrequencyMap(), wordFrequencyChanged => boolean()}.
 
 -define(WORDS_FILE, "./words.txt").
 %-define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
 -define(FREQUENCY_FILE, "./frequency.dat").
 
-handle_call({query, Keys}, _From, #keyToWordsServiceState{wordDictionary = WordDictionary, wordFrequencyMap = FrequencyMap} = State) ->
+handle_call({query, Keys}, _From, #{wordDictionary := WordDictionary, wordFrequencyMap := FrequencyMap} = State) ->
     {reply, findWords(Keys, WordDictionary, FrequencyMap), State}.
 
-handle_cast({use, Word}, #keyToWordsServiceState{wordFrequencyMap = FrequencyMap} = State) ->
+handle_cast({use, Word}, #{wordFrequencyMap := FrequencyMap} = State) ->
     NewFrequencyMap = maps:update_with(Word, fun(V) -> V + 1 end, 1, FrequencyMap),
-    {noreply, State#keyToWordsServiceState{wordFrequencyMap = NewFrequencyMap, wordFrequencyChanged = true}}.
+    {noreply, State#{wordFrequencyMap := NewFrequencyMap, wordFrequencyChanged := true}}.
 
-handle_info(saveFrequencyMap, #keyToWordsServiceState{wordFrequencyMap = FrequencyMap, wordFrequencyChanged = true} = State) ->
+handle_info(saveFrequencyMap, #{wordFrequencyMap := FrequencyMap, wordFrequencyChanged := true} = State) ->
     dumpFrequency(FrequencyMap),
     erlang:send_after(?SAVE_FREQUENCY_MAP_PERIOD, ?SERVER, saveFrequencyMap),
-    {noreply, State#keyToWordsServiceState{wordFrequencyChanged = false}};
-handle_info(saveFrequencyMap, #keyToWordsServiceState{wordFrequencyChanged = false} = State) ->
+    {noreply, State#{wordFrequencyChanged := false}};
+handle_info(saveFrequencyMap, #{wordFrequencyChanged := false} = State) ->
     erlang:send_after(?SAVE_FREQUENCY_MAP_PERIOD, ?SERVER, saveFrequencyMap),
     {noreply, State};
 handle_info(_, State) ->
     {noreply, State}.
 
-terminate(_Reason, #keyToWordsServiceState{wordFrequencyMap = FrequencyMap}) ->
+terminate(_Reason, #{wordFrequencyMap := FrequencyMap}) ->
     dumpFrequency(FrequencyMap).
 
--spec init([]) -> {ok, #keyToWordsServiceState{}}.
+-spec init([]) -> {ok, keyToWordsServiceState()}.
 init([]) ->
     erlang:send_after(?SAVE_FREQUENCY_MAP_PERIOD, ?SERVER, saveFrequencyMap),
     {ok, WordRowsText} = file:read_file(?WORDS_FILE),
     WordDictionary = buildWordDictionary(WordRowsText, []),
-    {ok, #keyToWordsServiceState{wordDictionary = WordDictionary, wordFrequencyMap = loadWordFrequency(), wordFrequencyChanged = false}}.
+    {ok, #{wordDictionary => WordDictionary, wordFrequencyMap => loadWordFrequency(), wordFrequencyChanged => false}}.
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
