@@ -23,7 +23,7 @@ handle_call({query, Keys}, _From, #{wordDictionary := WordDictionary, wordFreque
     {reply, findWords(Keys, WordDictionary, FrequencyMap), State}.
 
 handle_cast({use, Word}, #{wordFrequencyMap := FrequencyMap} = State) ->
-    NewFrequencyMap = maps:update_with(Word, fun(V) -> V + 1 end, 1, FrequencyMap),
+    NewFrequencyMap = maps:update_with(Word, fun (V) -> V + 1 end, 1, FrequencyMap),
     {noreply, State#{wordFrequencyMap := NewFrequencyMap, wordFrequencyChanged := true}}.
 
 handle_info(saveFrequencyMap, #{wordFrequencyMap := FrequencyMap, wordFrequencyChanged := true} = State) ->

@@ -2,7 +2,7 @@
 
 A modal text editor (like vi) with built-in T9 input method. You need only 3 fingers to write programs!
 
-(Under developing...)
+(Still under developing...)
 
 
 ## Movement
@@ -72,3 +72,8 @@ MAP 5
 ```
 $        `
 ```
+
+## User Interface
+
+For now, only a terminal interface based on ncurses is supported, which made this program inconvenient under Windows.
+In the future, a wxWidget-based GUI will be supported.
