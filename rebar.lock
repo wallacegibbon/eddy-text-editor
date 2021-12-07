@@ -1,4 +1,0 @@
-[{<<"cecho">>,
-  {git,"https://github.com/mazenharake/cecho",
-       {ref,"6b5ada4769b0f16a53a4b4925b4ba2879c50de01"}},
-  0}].

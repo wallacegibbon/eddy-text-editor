@@ -77,14 +77,18 @@ newOptionWindow() ->
     W.
 
 -spec deleteOptionWindow(windowHandle()) -> ok.
-deleteOptionWindow(T9Win) ->
-    cecho:delwin(T9Win),
+deleteOptionWindow(WindowHandle) ->
+    cecho:werase(WindowHandle),
+    cecho:wrefresh(WindowHandle),
+    cecho:delwin(WindowHandle),
+    cecho:refresh(),
     cecho:curs_set(1),
     ok.
+
 -spec drawWordOptions([string()], windowHandle()) -> ok.
 drawWordOptions(Options, WindowHandle) ->
-    {Row, Col} = cecho:getyx(),
     cecho:werase(WindowHandle),
+    {Row, Col} = cecho:getyx(),
     drawWordOptionList(lists:sublist(Options, ?WINDOW_ROWS), WindowHandle),
     cecho:move(Row, Col),
     ok.

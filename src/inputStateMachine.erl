@@ -64,8 +64,8 @@ handle_event(cast, $1, t9Insert, {[], []} = Data) ->
     {next_state, t9Insert, Data};
 %% when the word is selected, empty the word list and options
 handle_event(cast, Key, t9Insert, {_, [Word | _]}) when Key =:= $\s; Key =:= $\n ->
-    editEventManager:publish(stopInput),
     editEventManager:publish({insertString, Word}),
+    editEventManager:publish(stopInput),
     keyToWordService:frequencyCount(list_to_binary(Word)),
     {next_state, t9Start, {[], []}};
 handle_event(cast, $\b, t9Insert, {[], _}) ->
