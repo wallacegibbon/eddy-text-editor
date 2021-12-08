@@ -5,6 +5,18 @@ A modal text editor (like vi) with built-in T9 input method. You need only 3 fin
 (Still under developing...)
 
 
+## T9 Input
+
+```
+        abc      def
+
+ghi     jkl      mno
+
+pqrs    tuv     wxyz
+```
+
+%% In the T9 input method, 2 <-> abc, 3 <-> def, 4 <-> ghi, 5 <-> jkl, 6 <-> mno, 7 <-> pqrs, 8 <-> tuv, 9 <-> wxyz
+
 ## Movement
 
 ```
