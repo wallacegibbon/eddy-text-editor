@@ -1,5 +1,4 @@
 -module(eddy).
-
 -export([start/0]).
 
 -spec start() -> no_return().

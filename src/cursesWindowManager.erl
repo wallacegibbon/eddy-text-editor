@@ -1,8 +1,7 @@
 -module(cursesWindowManager).
+-export([init/1, handle_event/2, handle_call/2, terminate/2]).
 
 -behaviour(gen_event).
-
--export([init/1, handle_event/2, handle_call/2, terminate/2]).
 
 -type windowHandle() :: any() | none.
 -type cursesWindowManagerState() :: #{window => windowHandle()}.

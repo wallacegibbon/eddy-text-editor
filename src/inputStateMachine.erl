@@ -1,8 +1,7 @@
 -module(inputStateMachine).
+-export([init/1, callback_mode/0, handle_event/4, start_link/0]).
 
 -behaviour(gen_statem).
-
--export([init/1, callback_mode/0, handle_event/4, start_link/0]).
 
 -include("./t9InputUtil.hrl").
 

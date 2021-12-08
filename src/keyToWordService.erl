@@ -1,16 +1,15 @@
 -module(keyToWordService).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, start_link/0, query/1, frequencyCount/1, stop/0]).
 
 -behaviour(gen_server).
-
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, start_link/0, query/1, frequencyCount/1, stop/0]).
 
 -define(SERVER, ?MODULE).
 -define(SAVE_FREQUENCY_MAP_PERIOD, 10000).
 
 %-type t9KeyStroke() :: $2..$9.
 -type t9KeyStroke() :: integer().
--type wordFrequencyMap() :: #{binary() => integer()}.
--type wordDictionaryItem() :: {[t9KeyStroke()], binary()}.
+-type wordFrequencyMap() :: #{Word :: binary() => Frequency :: integer()}.
+-type wordDictionaryItem() :: {WordKeyStroke :: [t9KeyStroke()], WordString :: binary()}.
 -type wordDictionary() :: [wordDictionaryItem()].
 
 -type keyToWordsServiceState() :: #{wordDictionary => wordDictionary(), wordFrequencyMap => wordFrequencyMap(), wordFrequencyChanged => boolean()}.

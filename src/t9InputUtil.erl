@@ -1,5 +1,4 @@
 -module(t9InputUtil).
-
 -export([preTranslate/1, translateCommand/2, translateKey/2]).
 
 -include("./t9InputUtil.hrl").
