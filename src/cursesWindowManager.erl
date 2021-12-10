@@ -1,6 +1,5 @@
 -module(cursesWindowManager).
 -export([init/1, handle_event/2, handle_call/2, terminate/2]).
-
 -behaviour(gen_event).
 
 -type windowHandle() :: any() | none.
@@ -57,7 +56,7 @@ terminate(_, _) ->
 keyListener() ->
     try t9InputUtil:preTranslate(cecho:getch()) of
         {ok, Character} ->
-            gen_statem:cast(inputStateMachine, Character);
+            inputStateMachine:newCharacter(Character);
         error ->
             ok
     catch

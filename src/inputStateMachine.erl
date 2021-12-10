@@ -1,8 +1,6 @@
 -module(inputStateMachine).
--export([init/1, callback_mode/0, handle_event/4, start_link/0]).
-
+-export([init/1, callback_mode/0, handle_event/4, start_link/0, newCharacter/1]).
 -behaviour(gen_statem).
-
 -include("./t9InputUtil.hrl").
 
 -define(SERVER, ?MODULE).
@@ -103,3 +101,6 @@ callback_mode() ->
 
 start_link() ->
     gen_statem:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+newCharacter(Character) ->
+    gen_statem:cast(?SERVER, Character).
