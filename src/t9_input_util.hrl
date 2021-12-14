@@ -1,0 +1,2 @@
+-type eddy_mode() :: t9_start | t9_insert | change_map | wait_command_1 | wait_command_2.
+-type base_key_stroke() :: integer() | change_map_key | changeModeKey | command_key.

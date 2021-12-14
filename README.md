@@ -86,8 +86,3 @@ MAP 5
 ```
 $        `
 ```
-
-## User Interface
-
-For now, only a terminal interface based on ncurses is supported, which made this program inconvenient under Windows.
-In the future, a wxWidget-based GUI will be supported.

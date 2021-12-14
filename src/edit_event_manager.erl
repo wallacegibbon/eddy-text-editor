@@ -1,4 +1,4 @@
--module(editEventManager).
+-module(edit_event_manager).
 -export([start/0, add_handler/1, delete_handler/1, publish/1]).
 -define(SERVER, ?MODULE).
 

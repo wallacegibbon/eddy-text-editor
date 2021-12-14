@@ -1,13 +1,13 @@
--module(t9InputUtil).
--export([preTranslate/1, translateCommand/2, translateKey/2]).
+-module(t9_input_util).
+-export([pre_translate/1, translate_command/2, translate_key/2]).
 
--include("./t9InputUtil.hrl").
+-include("./t9_input_util.hrl").
 
 -define(COMMANDS, #{"22" => complete, "11" => capitalize, "12" => upper, "13" => lower, "14" => join1, "16" => join2, "33" => undo, "32" => redo,
                     "66" => find, "88" => select, "77" => cut, "78" => copy, "79" => paste, "44" => save, "55" => quit, "45" => saveAndQuit}).
 
 -define(BASEMAP, #{$w => $1, $e => $2, $r => $3, $s => $4, $d => $5, $f => $6, $x => $7, $c => $8, $v => $9, $b => $0,
-                   $\s => $\s, $g => $\n, $t => $\b, $3 => changeMapKey, $2 => changeModeKey, $4 => commandKey}).
+                   $\s => $\s, $g => $\n, $t => $\b, $3 => change_map_key, $2 => changeModeKey, $4 => command_key}).
 
 -define(MAP1, #{$1 => $1, $2 => $2, $3 => $3, $4 => $4, $5 => $5, $6 => $6, $7 => $7, $8 => $8, $9 => $9, $0 => $0, $\n => $\n, $\b => $\b}).
 
@@ -19,29 +19,29 @@
 
 -define(MAP5, #{$1 => $$, $2 => $`, $\n => $\n, $\b => $\b}).
 
--spec preTranslate(char()) -> {ok, baseKeyStroke()} | error.
-preTranslate(C) ->
-    maps:find(characterLowerCase(C), ?BASEMAP).
+-spec pre_translate(char()) -> {ok, base_key_stroke()} | error.
+pre_translate(C) ->
+    maps:find(char_lowercase(C), ?BASEMAP).
 
 %% Commands in eddy are all 2-keystroke
--spec translateCommand(char(), char()) -> atom().
-translateCommand(Key1, Key2) ->
+-spec translate_command(char(), char()) -> atom().
+translate_command(Key1, Key2) ->
     maps:get([Key1, Key2], ?COMMANDS, unknown).
 
--spec translateKey(char(), integer()) -> char().
-translateKey(Key, KeyMapIndex) ->
-    maps:get(Key, getMapOfIndex(KeyMapIndex), $\s).
+-spec translate_key(char(), integer()) -> char().
+translate_key(Key, KeyMapIndex) ->
+    maps:get(Key, get_map_of_index(KeyMapIndex), $\s).
 
--spec getMapOfIndex(integer()) -> #{char() => char()}.
-getMapOfIndex(1) -> ?MAP1;
-getMapOfIndex(2) -> ?MAP2;
-getMapOfIndex(3) -> ?MAP3;
-getMapOfIndex(4) -> ?MAP4;
-getMapOfIndex(5) -> ?MAP5;
-getMapOfIndex(_) -> #{}.
+-spec get_map_of_index(integer()) -> #{char() => char()}.
+get_map_of_index(1) -> ?MAP1;
+get_map_of_index(2) -> ?MAP2;
+get_map_of_index(3) -> ?MAP3;
+get_map_of_index(4) -> ?MAP4;
+get_map_of_index(5) -> ?MAP5;
+get_map_of_index(_) -> #{}.
 
--spec characterLowerCase(char()) -> char().
-characterLowerCase(C) when C >= $A, C =< $Z ->
+-spec char_lowercase(char()) -> char().
+char_lowercase(C) when C >= $A, C =< $Z ->
     C - $A + $a;
-characterLowerCase(C) ->
+char_lowercase(C) ->
     C.

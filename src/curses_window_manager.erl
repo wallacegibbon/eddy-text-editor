@@ -1,81 +1,81 @@
--module(cursesWindowManager).
+-module(curses_window_manager).
 -export([init/1, handle_event/2, handle_call/2, terminate/2]).
 -behaviour(gen_event).
 
--type windowHandle() :: any() | none.
--type cursesWindowManagerState() :: #{window => windowHandle()}.
+-type window_handle() :: any() | none.
+-type state() :: #{window => window_handle()}.
 
 -define(WINDOW_ROWS, 8).
 -define(WINDOW_COLUMNS, 22).
 
 %% when no words are found, show the keys directly
-handle_event({wordsOptions, {[], Keys}}, #{window := WindowHandle} = State) ->
-    drawWordOptions([Keys], WindowHandle),
+handle_event({word_options, {[], Keys}}, #{window := WindowHandle} = State) ->
+    draw_word_options([Keys], WindowHandle),
     {ok, State};
-handle_event({wordsOptions, {Options, _}}, #{window := WindowHandle} = State) ->
-    drawWordOptions(Options, WindowHandle),
+handle_event({word_options, {Options, _}}, #{window := WindowHandle} = State) ->
+    draw_word_options(Options, WindowHandle),
     {ok, State};
-handle_event({insertString, String}, State) ->
+handle_event({insert_string, String}, State) ->
     cecho:addstr(String),
     cecho:refresh(),
     {ok, State};
-handle_event(startInput, State) ->
-    {ok, State#{window => newOptionWindow()}};
-handle_event(stopInput, #{window := WindowHandle} = State) when WindowHandle =/= none ->
-    deleteOptionWindow(WindowHandle),
+handle_event(start_input, State) ->
+    {ok, State#{window => new_option_window()}};
+handle_event(stop_input, #{window := WindowHandle} = State) when WindowHandle =/= none ->
+    del_option_window(WindowHandle),
     {ok, State#{window := none}};
-handle_event(stopInput, State) ->
+handle_event(stop_input, State) ->
     {ok, State};
-handle_event(deleteCharacter, State) ->
+handle_event(delete_character, State) ->
     %% todo
     {ok, State};
 handle_event({error, ErrorInfo}, State) ->
-    showMessage(io_lib:format("error: ~w", [ErrorInfo])),
+    show_message(io_lib:format("error: ~w", [ErrorInfo])),
     {ok, State};
 handle_event({command, Quit}, _) when Quit =:= quit; Quit =:= saveAndQuit ->
     remove_handler;
 handle_event({command, Command}, State) ->
-    showMessage(io_lib:format("command: ~w", [Command])),
+    show_message(io_lib:format("command: ~w", [Command])),
     {ok, State}.
 
 handle_call(_Request, State) ->
     {ok, ok, State}.
 
--spec init([]) -> {ok, cursesWindowManagerState()}.
+-spec init([]) -> {ok, state()}.
 init([]) ->
     ok = application:start(cecho),
     ok = cecho:noecho(),
-    spawn_link(fun () -> keyListener() end),
+    spawn_link(fun () -> key_listener_loop() end),
     {ok, #{window => none}}.
 
 terminate(_, _) ->
-    ok = keyToWordService:stop(),
+    ok = key_to_word_service:stop(),
     ok = application:stop(cecho).
 
--spec keyListener() -> no_return().
-keyListener() ->
-    try t9InputUtil:preTranslate(cecho:getch()) of
+-spec key_listener_loop() -> no_return().
+key_listener_loop() ->
+    try t9_input_util:pre_translate(cecho:getch()) of
         {ok, Character} ->
-            inputStateMachine:newCharacter(Character);
+            input_state_machine:feed_character(Character);
         error ->
             ok
     catch
         exit:_ ->
             ok
     after
-        keyListener()
+        key_listener_loop()
     end.
 
--spec newOptionWindow() -> windowHandle().
-newOptionWindow() ->
+-spec new_option_window() -> window_handle().
+new_option_window() ->
     {Row, Col} = cecho:getyx(),
     cecho:curs_set(0),
     W = cecho:newwin(?WINDOW_ROWS, ?WINDOW_COLUMNS, Row + 1, Col),
     cecho:wborder(W, $|, $|, $-, $-, $+, $+, $+, $+),
     W.
 
--spec deleteOptionWindow(windowHandle()) -> ok.
-deleteOptionWindow(WindowHandle) ->
+-spec del_option_window(window_handle()) -> ok.
+del_option_window(WindowHandle) ->
     cecho:werase(WindowHandle),
     cecho:wrefresh(WindowHandle),
     cecho:delwin(WindowHandle),
@@ -83,27 +83,27 @@ deleteOptionWindow(WindowHandle) ->
     cecho:curs_set(1),
     ok.
 
--spec drawWordOptions([string()], windowHandle()) -> ok.
-drawWordOptions(Options, WindowHandle) ->
+-spec draw_word_options([string()], window_handle()) -> ok.
+draw_word_options(Options, WindowHandle) ->
     cecho:werase(WindowHandle),
     {Row, Col} = cecho:getyx(),
-    drawWordOptionList(lists:sublist(Options, ?WINDOW_ROWS), WindowHandle),
+    draw_option_list(lists:sublist(Options, ?WINDOW_ROWS), WindowHandle),
     cecho:move(Row, Col),
     ok.
 
--spec drawWordOptionList([string()], windowHandle()) -> ok.
-drawWordOptionList([Word | RestOptions], WindowHandle) ->
+-spec draw_option_list([string()], window_handle()) -> ok.
+draw_option_list([Word | RestOptions], WindowHandle) ->
     {Row, _} = cecho:getyx(WindowHandle),
     cecho:waddstr(WindowHandle, Word),
     cecho:wmove(WindowHandle, Row + 1, 0),
-    drawWordOptionList(RestOptions, WindowHandle);
-drawWordOptionList([], WindowHandle) ->
+    draw_option_list(RestOptions, WindowHandle);
+draw_option_list([], WindowHandle) ->
     cecho:wmove(WindowHandle, 0, 0),
     cecho:wrefresh(WindowHandle),
     ok.
 
--spec showMessage(string()) -> ok.
-showMessage(MessageString) ->
+-spec show_message(string()) -> ok.
+show_message(MessageString) ->
     {MaxRowNumber, _} = cecho:getmaxyx(),
     {Row, Column} = cecho:getyx(),
     cecho:mvaddstr(MaxRowNumber - 1, 0, MessageString),
