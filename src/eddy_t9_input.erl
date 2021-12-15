@@ -1,7 +1,7 @@
--module(t9_input_util).
+-module(eddy_t9_input).
 -export([pre_translate/1, translate_command/2, translate_key/2]).
 
--include("./t9_input_util.hrl").
+-include("./eddy_t9_input.hrl").
 
 -define(COMMANDS, #{"22" => complete, "11" => capitalize, "12" => upper, "13" => lower, "14" => join1, "16" => join2, "33" => undo, "32" => redo,
                     "66" => find, "88" => select, "77" => cut, "78" => copy, "79" => paste, "44" => save, "55" => quit, "45" => saveAndQuit}).

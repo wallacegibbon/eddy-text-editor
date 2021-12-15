@@ -1,7 +1,7 @@
--module(input_state_machine).
+-module(eddy_input_statem).
 -export([init/1, callback_mode/0, handle_event/4, start_link/0, feed_character/1]).
 -behaviour(gen_statem).
--include("./t9_input_util.hrl").
+-include("./eddy_t9_input.hrl").
 
 -define(SERVER, ?MODULE).
 
@@ -20,37 +20,37 @@ handle_event(cast, command_key, _, {_, PreviousState, PreviousData}) ->
 handle_event(cast, Key, wait_command_1, {_, PreviousState, PreviousData}) ->
     {next_state, wait_command_2, {[Key], PreviousState, PreviousData}};
 handle_event(cast, Key2, wait_command_2, {[Key1], PreviousState, PreviousData}) ->
-    edit_event_manager:publish({command, t9_input_util:translate_command(Key1, Key2)}),
+    eddy_edit_event:publish({command, eddy_t9_input:translate_command(Key1, Key2)}),
     {next_state, PreviousState, PreviousData};
 
 %% Go back to t9 insert mode by double click on <MAP CHANGE> key.
 handle_event(cast, change_map_key, change_map, _) ->
-    edit_event_manager:publish(stop_input),
+    eddy_edit_event:publish(stop_input),
     {next_state, t9_start, {[], []}};
 handle_event(cast, change_map_key, _, Data) ->
     {next_state, change_map, Data};
 handle_event(cast, Key, change_map, _) when Key >= $1, Key =< $9 ->
-    edit_event_manager:publish(stop_input),
+    eddy_edit_event:publish(stop_input),
     {next_state, direct_insert, Key - $0};
 handle_event(cast, _, change_map, Data) ->
     {next_state, change_map, Data};
 
 %% In direct-insert mode, the data is just an integer (key map index)
 handle_event(cast, Key, direct_insert, MapIndex) ->
-    edit_event_manager:publish({insert_string, [t9_input_util:translate_key(Key, MapIndex)]}),
+    eddy_edit_event:publish({insert_string, [eddy_t9_input:translate_key(Key, MapIndex)]}),
     {next_state, direct_insert, MapIndex};
 
 %% The t9 input method logic
 handle_event(cast, Key, t9_start, _) when Key >= $2, Key =< $9 ->
-    edit_event_manager:publish(start_input),
-    Options = key_to_word_service:query([Key]),
+    eddy_edit_event:publish(start_input),
+    Options = eddy_word_translator:query([Key]),
     sync_word_options(Options, [Key]),
     {next_state, t9_insert, {[Key], Options}};
 handle_event(cast, $\b, t9_start, Data) ->
     {next_state, t9_start, Data};
 handle_event(cast, Key, t9_insert, {CollectedKeys, _}) when Key >= $2, Key =< $9 ->
     Keys = [Key | CollectedKeys],
-    Options = key_to_word_service:query(lists:reverse(Keys)),
+    Options = eddy_word_translator:query(lists:reverse(Keys)),
     sync_word_options(Options, Keys),
     {next_state, t9_insert, {Keys, Options}};
 handle_event(cast, $1, t9_insert, {Keys, [W | RestWords]}) ->
@@ -61,36 +61,36 @@ handle_event(cast, $1, t9_insert, {[], []} = Data) ->
     {next_state, t9_insert, Data};
 %% when the word is selected, empty the word list and options
 handle_event(cast, Key, t9_insert, {_, [Word | _]}) when Key =:= $\s; Key =:= $\n ->
-    edit_event_manager:publish({insert_string, Word}),
-    edit_event_manager:publish(stop_input),
-    key_to_word_service:frequency_count(list_to_binary(Word)),
+    eddy_edit_event:publish({insert_string, Word}),
+    eddy_edit_event:publish(stop_input),
+    eddy_word_translator:frequency_count(list_to_binary(Word)),
     {next_state, t9_start, {[], []}};
 handle_event(cast, $\b, t9_insert, {[], _}) ->
     {next_state, t9_start, {[], []}};
 handle_event(cast, $\b, State, Data) when State =/= t9_insert, State =/= t9_start ->
-    edit_event_manager:publish(delete_character),
+    eddy_edit_event:publish(delete_character),
     {next_state, State, Data};
 handle_event(cast, $\b, t9_insert, {[_], _}) ->
-    edit_event_manager:publish(stop_input),
+    eddy_edit_event:publish(stop_input),
     {next_state, t9_start, {[], []}};
 handle_event(cast, $\b, t9_insert, {[_ | Keys], _}) ->
-    Options = key_to_word_service:query(lists:reverse(Keys)),
+    Options = eddy_word_translator:query(lists:reverse(Keys)),
     sync_word_options(Options, Keys),
     {next_state, t9_insert, {Keys, Options}};
 
 %% In other cases, space and newline key stands for themselves
 handle_event(cast, Key, State, Data) when Key =:= $\s; Key =:= $\n ->
-    edit_event_manager:publish({insert_string, [Key]}),
+    eddy_edit_event:publish({insert_string, [Key]}),
     {next_state, State, Data};
 
 %% There should not be other situations.
 handle_event(cast, Key, State, Data) ->
-    edit_event_manager:publish({error, {Key, State, Data}}),
+    eddy_edit_event:publish({error, {Key, State, Data}}),
     {next_state, t9_start, {[], []}}.
 
 -spec sync_word_options([string()], [base_key_stroke()]) -> ok.
 sync_word_options(WordOptionList, Keys) ->
-    edit_event_manager:publish({word_options, {WordOptionList, lists:reverse(Keys)}}).
+    eddy_edit_event:publish({word_options, {WordOptionList, lists:reverse(Keys)}}).
 
 -spec init([]) -> {ok, eddy_mode(), state_data()}.
 init([]) ->

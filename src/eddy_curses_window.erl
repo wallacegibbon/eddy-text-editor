@@ -1,4 +1,4 @@
--module(curses_window_manager).
+-module(eddy_curses_window).
 -export([init/1, handle_event/2, handle_call/2, terminate/2]).
 -behaviour(gen_event).
 
@@ -49,14 +49,14 @@ init([]) ->
     {ok, #{window => none}}.
 
 terminate(_, _) ->
-    ok = key_to_word_service:stop(),
+    ok = eddy_word_translator:stop(),
     ok = application:stop(cecho).
 
 -spec key_listener_loop() -> no_return().
 key_listener_loop() ->
-    try t9_input_util:pre_translate(cecho:getch()) of
+    try eddy_t9_input:pre_translate(cecho:getch()) of
         {ok, Character} ->
-            input_state_machine:feed_character(Character);
+            eddy_input_statem:feed_character(Character);
         error ->
             ok
     catch

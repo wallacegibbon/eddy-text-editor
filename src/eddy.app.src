@@ -2,6 +2,6 @@
  [{description, "A text editor"},
   {vsn, "0.1.0"},
   {applications, [kernel, stdlib, cecho]},
-  {registered, [key_to_word_service, curses_window_manager, edit_event_manager, input_state_machine]},
+  {registered, [eddy_word_translator, eddy_curses_window, eddy_edit_event, eddy_input_statem]},
   {licenses, ["Apache 2.0"]}
  ]}.
