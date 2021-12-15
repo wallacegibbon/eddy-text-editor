@@ -1,4 +1,4 @@
--module(eddy_word_translator).
+-module(eddy_t9_translator).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, start_link/0, query/1, frequency_count/1, stop/0]).
 -behaviour(gen_server).
 
