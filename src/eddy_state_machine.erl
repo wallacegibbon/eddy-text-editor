@@ -5,13 +5,13 @@
 
 -define(SERVER, ?MODULE).
 
--type keys_and_word_options() :: {Keys :: [base_key_stroke()], Options :: [string()]}.
--type command_mode_data() :: {Keys :: [base_key_stroke()], PreviousState :: eddy_mode(), PreviousData :: state_data()}.
+-type keys_and_word_options() :: {Keys :: [eddy_key()], Options :: [string()]}.
+-type command_mode_data() :: {Keys :: [eddy_key()], PreviousState :: eddy_mode(), PreviousData :: state_data()}.
 -type map_index() :: integer().
 
 -type state_data() :: keys_and_word_options() | map_index() | command_mode_data().
 
--spec handle_event(cast, base_key_stroke(), eddy_mode(), state_data()) -> {next_state, eddy_mode(), state_data()}.
+-spec handle_event(cast, eddy_key(), eddy_mode(), state_data()) -> {next_state, eddy_mode(), state_data()}.
 handle_event(cast, command_key, State, Data) when State =/= wait_command_1, State =/= wait_command_2 ->
     {next_state, wait_command_1, {[command], State, Data}};
 %% When in command state (wait_command_1 or wait_command_2), clicking on the command key again will reset the state to wait_command_1
@@ -88,7 +88,7 @@ handle_event(cast, Key, State, Data) ->
     eddy_edit_event:publish({error, {Key, State, Data}}),
     {next_state, t9_start, {[], []}}.
 
--spec sync_word_options([string()], [base_key_stroke()]) -> ok.
+-spec sync_word_options([string()], [eddy_key()]) -> ok.
 sync_word_options(WordOptionList, Keys) ->
     eddy_edit_event:publish({word_options, {WordOptionList, lists:reverse(Keys)}}).
 
