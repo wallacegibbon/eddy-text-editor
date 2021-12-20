@@ -15,7 +15,7 @@ handle_event({word_options, {[], Keys}}, #{window := WindowHandle} = State) ->
 handle_event({word_options, {Options, _}}, #{window := WindowHandle} = State) ->
     draw_word_options(Options, WindowHandle),
     {ok, State};
-handle_event({insert_string, String}, State) ->
+handle_event({insert_str, String}, State) ->
     cecho:addstr(String),
     cecho:refresh(),
     {ok, State};
@@ -26,13 +26,15 @@ handle_event(stop_input, #{window := WindowHandle} = State) when WindowHandle =/
     {ok, State#{window := none}};
 handle_event(stop_input, State) ->
     {ok, State};
-handle_event(delete_character, State) ->
+handle_event(del_char, State) ->
     %% todo
     {ok, State};
 handle_event({error, ErrorInfo}, State) ->
     show_message(io_lib:format("error: ~w", [ErrorInfo])),
     {ok, State};
-handle_event({command, Quit}, _) when Quit =:= quit; Quit =:= saveAndQuit ->
+handle_event({command, save_and_quit}, _) ->
+    remove_handler;
+handle_event({command, quit}, _) ->
     remove_handler;
 handle_event({command, Command}, State) ->
     show_message(io_lib:format("command: ~w", [Command])),
@@ -56,7 +58,7 @@ terminate(_, _) ->
 key_listener_loop() ->
     try eddy_keystroke:pre_translate(cecho:getch()) of
         {ok, Character} ->
-            eddy_state_machine:feed_character(Character);
+            eddy_state_machine:feed_char(Character);
         error ->
             ok
     catch
