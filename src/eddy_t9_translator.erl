@@ -2,7 +2,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, start_link/0, query/1, freq_count/1, stop/0]).
 -behaviour(gen_server).
 
-%-type t9_key_stroke() :: $2..$9.
+%%-type t9_key_stroke() :: $2..$9.
 -type t9_key_stroke() :: integer().
 -type word_freq_map() :: #{Word :: binary() => Frequency :: integer()}.
 -type word_dictionary_item() :: {WordKeyStroke :: [t9_key_stroke()], WordString :: binary()}.
@@ -11,7 +11,7 @@
 -type state() :: #{word_dict => word_dict(), word_freq_map => word_freq_map(), freq_changed => boolean()}.
 
 -define(WORDS_FILE, "./words.txt").
-%-define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
+%%-define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
 -define(FREQUENCY_FILE, "./frequency.dat").
 
 -define(SERVER, ?MODULE).
