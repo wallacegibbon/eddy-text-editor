@@ -1,27 +1,34 @@
 -module(eddy_t9_translator).
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, start_link/0, query/1, freq_count/1, stop/0]).
+
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, start_link/0,
+         query/1, freq_count/1, stop/0]).
+
 -behaviour(gen_server).
 
 %%-type t9_key_stroke() :: $2..$9.
 -type t9_key_stroke() :: integer().
 -type word_freq_map() :: #{Word :: binary() => Frequency :: integer()}.
--type word_dictionary_item() :: {WordKeyStroke :: [t9_key_stroke()], WordString :: binary()}.
+-type word_dictionary_item() ::
+    {WordKeyStroke :: [t9_key_stroke()], WordString :: binary()}.
 -type word_dict() :: [word_dictionary_item()].
-
--type state() :: #{word_dict => word_dict(), word_freq_map => word_freq_map(), freq_changed => boolean()}.
+-type state() ::
+    #{word_dict => word_dict(),
+      word_freq_map => word_freq_map(),
+      freq_changed => boolean()}.
 
 -define(WORDS_FILE, "./words.txt").
 %%-define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
 -define(FREQUENCY_FILE, "./frequency.dat").
-
 -define(SERVER, ?MODULE).
 -define(FREQ_MAP_SAVE_PERIOD, 10000).
 
-handle_call({query, Keys}, _From, #{word_dict := WordDict, word_freq_map := FreqMap} = State) ->
+handle_call({query, Keys},
+            _From,
+            #{word_dict := WordDict, word_freq_map := FreqMap} = State) ->
     {reply, find_words(Keys, WordDict, FreqMap), State}.
 
 handle_cast({use, Word}, #{word_freq_map := FreqMap} = State) ->
-    NewFreqMap = maps:update_with(Word, fun (V) -> V + 1 end, 1, FreqMap),
+    NewFreqMap = maps:update_with(Word, fun(V) -> V + 1 end, 1, FreqMap),
     {noreply, State#{word_freq_map := NewFreqMap, freq_changed := true}}.
 
 handle_info(save_freq_map, #{word_freq_map := FreqMap, freq_changed := true} = State) ->
@@ -42,7 +49,10 @@ init([]) ->
     erlang:send_after(?FREQ_MAP_SAVE_PERIOD, ?SERVER, save_freq_map),
     {ok, WordRowsText} = file:read_file(?WORDS_FILE),
     WordDict = mk_word_dictionary(WordRowsText, []),
-    {ok, #{word_dict => WordDict, word_freq_map => load_freq_map(), freq_changed => false}}.
+    {ok,
+     #{word_dict => WordDict,
+       word_freq_map => load_freq_map(),
+       freq_changed => false}}.
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -120,7 +130,7 @@ match_keys([], _) ->
 
 -spec load_freq_map() -> word_freq_map().
 load_freq_map() ->
-    ensure_file_exist(?FREQUENCY_FILE, fun () -> dump_frequency(#{}) end),
+    ensure_file_exist(?FREQUENCY_FILE, fun() -> dump_frequency(#{}) end),
     try file:consult(?FREQUENCY_FILE) of
         {ok, [FreqMap]} ->
             FreqMap
@@ -129,7 +139,7 @@ load_freq_map() ->
             #{}
     end.
 
--spec ensure_file_exist(string(), fun (() -> ok)) -> ok.
+-spec ensure_file_exist(string(), fun(() -> ok)) -> ok.
 ensure_file_exist(FileName, AbsenceHandler) ->
     case filelib:is_file(FileName) of
         true ->
@@ -145,7 +155,8 @@ dump_frequency(FreqMap) ->
     ok = file:close(OutputFd).
 
 -spec find_words([char()], word_dict(), word_freq_map()) -> [string()].
-find_words([], _, _) -> [];
+find_words([], _, _) ->
+    [];
 find_words(Keys, WordDict, FreqMap) ->
     CandidateList = [Word || {WordKeys, Word} <- WordDict, match_keys(Keys, WordKeys)],
     prepare_result(CandidateList, FreqMap).

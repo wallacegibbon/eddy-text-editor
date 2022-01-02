@@ -1,17 +1,23 @@
 -module(eddy_state_machine).
+
 -export([init/1, callback_mode/0, handle_event/4, start_link/0, feed_char/1]).
+
 -behaviour(gen_statem).
+
 -include("./eddy_keystroke.hrl").
 
 -type keys_and_word_options() :: {Keys :: [eddy_key()], Options :: [string()]}.
--type command_mode_data() :: {Keys :: [eddy_key()], PrevState :: eddy_mode(), PrevData :: state_data()}.
+-type command_mode_data() ::
+    {Keys :: [eddy_key()], PrevState :: eddy_mode(), PrevData :: state_data()}.
 -type map_index() :: integer().
 -type state_data() :: keys_and_word_options() | map_index() | command_mode_data().
 
 -define(SERVER, ?MODULE).
 
--spec handle_event(cast, eddy_key(), eddy_mode(), state_data()) -> {next_state, eddy_mode(), state_data()}.
-handle_event(cast, command_key, State, Data) when State =/= wait_command_1, State =/= wait_command_2 ->
+-spec handle_event(cast, eddy_key(), eddy_mode(), state_data()) ->
+                      {next_state, eddy_mode(), state_data()}.
+handle_event(cast, command_key, State, Data)
+    when State =/= wait_command_1, State =/= wait_command_2 ->
     {next_state, wait_command_1, {[command], State, Data}};
 %% When in command state (wait_command_1 or wait_command_2), clicking on the command key again will reset the state to wait_command_1
 handle_event(cast, command_key, _, {_, PrevState, PrevData}) ->
@@ -21,7 +27,6 @@ handle_event(cast, Key, wait_command_1, {_, PrevState, PrevData}) ->
 handle_event(cast, Key2, wait_command_2, {[Key1], PrevState, PrevData}) ->
     eddy_edit_event:publish({command, eddy_keystroke:translate_command(Key1, Key2)}),
     {next_state, PrevState, PrevData};
-
 %% Go back to t9 insert mode by double click on <MAP CHANGE> key.
 handle_event(cast, change_map_key, change_map, _) ->
     eddy_edit_event:publish(stop_input),
@@ -33,12 +38,10 @@ handle_event(cast, Key, change_map, _) when Key >= $1, Key =< $9 ->
     {next_state, direct_insert, Key - $0};
 handle_event(cast, _, change_map, Data) ->
     {next_state, change_map, Data};
-
 %% In direct-insert mode, the data is just an integer (key map index)
 handle_event(cast, Key, direct_insert, MapIndex) ->
     eddy_edit_event:publish({insert_str, [eddy_keystroke:translate_key(Key, MapIndex)]}),
     {next_state, direct_insert, MapIndex};
-
 %% The t9 input method logic
 handle_event(cast, Key, t9_start, _) when Key >= $2, Key =< $9 ->
     eddy_edit_event:publish(start_input),
@@ -49,7 +52,9 @@ handle_event(cast, $\b, t9_start, Data) ->
     {next_state, t9_start, Data};
 handle_event(cast, Key, t9_insert, {CollectedKeys, _}) when Key >= $2, Key =< $9 ->
     Keys = [Key | CollectedKeys],
-    Options = eddy_t9_translator:query(lists:reverse(Keys)),
+    Options =
+        eddy_t9_translator:query(
+            lists:reverse(Keys)),
     sync_word_options(Options, Keys),
     {next_state, t9_insert, {Keys, Options}};
 handle_event(cast, $1, t9_insert, {Keys, [W | RestWords]}) ->
@@ -73,15 +78,15 @@ handle_event(cast, $\b, t9_insert, {[_], _}) ->
     eddy_edit_event:publish(stop_input),
     {next_state, t9_start, {[], []}};
 handle_event(cast, $\b, t9_insert, {[_ | Keys], _}) ->
-    Options = eddy_t9_translator:query(lists:reverse(Keys)),
+    Options =
+        eddy_t9_translator:query(
+            lists:reverse(Keys)),
     sync_word_options(Options, Keys),
     {next_state, t9_insert, {Keys, Options}};
-
 %% In other cases, space and newline key stands for themselves
 handle_event(cast, Key, State, Data) when Key =:= $\s; Key =:= $\n ->
     eddy_edit_event:publish({insert_str, [Key]}),
     {next_state, State, Data};
-
 %% There should not be other situations.
 handle_event(cast, Key, State, Data) ->
     eddy_edit_event:publish({error, {Key, State, Data}}),
