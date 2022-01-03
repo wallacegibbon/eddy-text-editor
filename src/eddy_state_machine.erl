@@ -19,7 +19,8 @@
 handle_event(cast, command_key, State, Data)
     when State =/= wait_command_1, State =/= wait_command_2 ->
     {next_state, wait_command_1, {[command], State, Data}};
-%% When in command state (wait_command_1 or wait_command_2), clicking on the command key again will reset the state to wait_command_1
+%% In command state (wait_command_1 or wait_command_2),
+%% clicking on the command key again will reset the state to wait_command_1
 handle_event(cast, command_key, _, {_, PrevState, PrevData}) ->
     {next_state, wait_command_1, {[], PrevState, PrevData}};
 handle_event(cast, Key, wait_command_1, {_, PrevState, PrevData}) ->
