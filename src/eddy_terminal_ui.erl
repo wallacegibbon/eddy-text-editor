@@ -1,7 +1,5 @@
 -module(eddy_terminal_ui).
-
 -export([init/1, handle_event/2, handle_call/2, terminate/2]).
-
 -behaviour(gen_event).
 
 -type window_handle() :: any() | none.
@@ -49,7 +47,7 @@ handle_call(_Request, State) ->
 init([]) ->
     ok = application:start(cecho),
     ok = cecho:noecho(),
-    spawn_link(fun() -> key_listener_loop() end),
+    spawn_link(fun () -> key_listener_loop() end),
     {ok, #{window => none}}.
 
 terminate(_, _) ->
@@ -58,9 +56,7 @@ terminate(_, _) ->
 
 -spec key_listener_loop() -> no_return().
 key_listener_loop() ->
-    try eddy_keystroke:pre_translate(
-            cecho:getch())
-    of
+    try eddy_keystroke:pre_translate(cecho:getch()) of
         {ok, Character} ->
             eddy_state_machine:feed_char(Character);
         error ->
