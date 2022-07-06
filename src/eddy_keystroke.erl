@@ -1,7 +1,8 @@
 -module(eddy_keystroke).
 -export([pre_translate/1, translate_command/2, translate_key/2]).
+-export_type([key/0]).
 
--include("./eddy_keystroke.hrl").
+-type key() :: integer() | change_map_key | change_mode_key | command_key.
 
 -define(COMMANDS,
         #{"22" => complete, "11" => capitalize, "12" => upper, "13" => lower, "14" => join1, "16" => join2,
@@ -32,7 +33,7 @@
 -define(MAP5,
         #{$1 => $$, $2 => $`, $\n => $\n, $\b => $\b}).
 
--spec pre_translate(char()) -> {ok, eddy_key()} | error.
+-spec pre_translate(char()) -> {ok, key()} | error.
 pre_translate(C) ->
     maps:find(lowercase(C), ?BASEMAP).
 
