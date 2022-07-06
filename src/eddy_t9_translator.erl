@@ -1,6 +1,7 @@
 -module(eddy_t9_translator).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, start_link/0, query/1, freq_count/1, stop/0]).
 -behaviour(gen_server).
+-define(SERVER, ?MODULE).
 
 %%-type t9_key_stroke() :: $2..$9.
 -type t9_key_stroke() :: integer().
@@ -12,7 +13,6 @@
 -define(WORDS_FILE, "./words.txt").
 %%-define(FREQUENCY_FILE, "/usr/share/eddy/frequency.dat").
 -define(FREQUENCY_FILE, "./frequency.dat").
--define(SERVER, ?MODULE).
 -define(FREQ_MAP_SAVE_PERIOD, 10000).
 
 handle_call({query, Keys}, _From, #{word_dict := WordDict, word_freq_map := FreqMap} = State) ->
