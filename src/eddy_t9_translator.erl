@@ -64,20 +64,14 @@ chars_to_keys(CharList) ->
     lists:map(fun char_to_key_unify_case/1, CharList).
 
 -spec char_to_key_unify_case(char()) -> t9_key_stroke().
-char_to_key_unify_case(A) when A >= $A, A =< $Z ->
-    char_to_key(A - $A + $a);
-char_to_key_unify_case(A) when A >= $a, A =< $z ->
-    char_to_key(A).
+char_to_key_unify_case(A) when A >= $A, A =< $Z -> char_to_key(A - $A + $a);
+char_to_key_unify_case(A) when A >= $a, A =< $z -> char_to_key(A).
 
 -spec char_to_key(integer()) -> t9_key_stroke().
-char_to_key(Number) when Number < $s ->
-    $2 + (Number - $a) div 3;
-char_to_key($s) ->
-    $7;
-char_to_key(Number) when Number >= $t, Number < $v ->
-    $8;
-char_to_key(_) ->
-    $9.
+char_to_key(Number) when Number < $s -> $2 + (Number - $a) div 3;
+char_to_key($s) -> $7;
+char_to_key(Number) when Number >= $t, Number < $v -> $8;
+char_to_key(_) -> $9.
 
 %% since there is no space inside words, all spaces can be simply ignored
 -spec get_one_word(binary(), [char()]) -> {[char()], binary()} | nothing.
@@ -107,14 +101,9 @@ mk_word_dictionary(WordRows, Result) ->
     end.
 
 -spec match_keys([t9_key_stroke()], [t9_key_stroke()]) -> boolean().
-match_keys([Key | RestKeys1], [Key | RestKeys2]) ->
-    match_keys(RestKeys1, RestKeys2);
-match_keys([Key1 | _], [Key2 | _]) when Key1 =/= Key2 ->
-    false;
-match_keys([_ | _], []) ->
-    false;
-match_keys([], _) ->
-    true.
+match_keys([Key | RestKeys1], [Key | RestKeys2]) -> match_keys(RestKeys1, RestKeys2);
+match_keys([_ | _], _) -> false;
+match_keys([], _) -> true.
 
 -spec load_freq_map() -> word_freq_map().
 load_freq_map() ->
