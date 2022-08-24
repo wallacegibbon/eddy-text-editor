@@ -1,7 +1,9 @@
-{application, eddy,
- [{description, "A text editor"},
-  {vsn, "0.1.0"},
-  {applications, [kernel, stdlib, cecho]},
-  {registered, [eddy_t9_translator, eddy_terminal_ui, eddy_edit_event, eddy_state_machine]},
-  {licenses, ["Apache 2.0"]}
- ]}.
+{application, eddy, [
+	{description, "A text editor"},
+	{vsn, "0.1.0"},
+	{applications, [kernel, stdlib, cecho]},
+	{registered,
+		[eddy_t9_translator, eddy_terminal_ui, eddy_edit_event,
+			eddy_state_machine]},
+	{licenses, ["Apache 2.0"]}
+]}.
