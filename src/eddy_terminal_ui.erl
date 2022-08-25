@@ -65,13 +65,13 @@ terminate(_, _) ->
 -spec key_listener_loop() -> no_return().
 key_listener_loop() ->
 	try eddy_keystroke:pre_translate(cecho:getch()) of
-		{ok, Character} ->
-			eddy_state_machine:feed_char(Character);
-		error ->
-			ok
+	{ok, Character} ->
+		eddy_state_machine:feed_char(Character);
+	error ->
+		ok
 	catch
-		exit:_ ->
-			ok
+	exit:_ ->
+		ok
 	after
 		key_listener_loop()
 	end.

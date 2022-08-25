@@ -126,22 +126,19 @@ get_one_word(<<>>, _) ->
 	-> Result when Result :: word_dict().
 mk_word_dictionary(WordRows, Result) ->
 	case get_one_word(WordRows, []) of
-		{Cs, Rest} ->
-			mk_word_dictionary(
-				Rest,
-				append_chars_to_result(Cs, Result)
-			);
-		nothing ->
-			Result
+	{Cs, Rest} ->
+		mk_word_dictionary(Rest, append_chars_to_result(Cs, Result));
+	nothing ->
+		Result
 	end.
 
 append_chars_to_result(Cs, Result) ->
 	try chars_to_keys(Cs) of
-		Keys ->
-			[{Keys, list_to_binary(Cs)} | Result]
+	Keys ->
+		[{Keys, list_to_binary(Cs)} | Result]
 	catch
-		_:_ ->
-			Result
+	_:_ ->
+		Result
 	end.
 
 -spec match_keys([t9_key_stroke()], [t9_key_stroke()]) -> boolean().
@@ -156,20 +153,20 @@ match_keys([], _) ->
 load_freq_map() ->
 	ensure_file_exist(?FREQUENCY_FILE, fun () -> dump_frequency(#{}) end),
 	try file:consult(?FREQUENCY_FILE) of
-		{ok, [FreqMap]} ->
-			FreqMap
+	{ok, [FreqMap]} ->
+		FreqMap
 	catch
-		_:_ ->
-			#{}
+	_:_ ->
+		#{}
 	end.
 
 -spec ensure_file_exist(string(), fun (() -> ok)) -> ok.
 ensure_file_exist(FileName, AbsenceHandler) ->
 	case filelib:is_file(FileName) of
-		true ->
-			ok;
-		false ->
-			AbsenceHandler()
+	true ->
+		ok;
+	false ->
+		AbsenceHandler()
 	end.
 
 -spec dump_frequency(word_freq_map()) -> ok.
