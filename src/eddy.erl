@@ -8,3 +8,4 @@ start() ->
 	{ok, _} = eddy_edit_event:start(),
 	ok = eddy_edit_event:add_handler(eddy_terminal_ui),
 	ok.
+

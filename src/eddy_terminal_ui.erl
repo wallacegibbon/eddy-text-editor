@@ -29,7 +29,7 @@ handle_event({insert_str, String}, State) ->
 handle_event(start_input, State) ->
 	{ok, State#{window => new_option_window()}};
 handle_event(stop_input, #{window := WindowHandle} = State)
-		when WindowHandle =/= none ->
+	when WindowHandle =/= none ->
 	del_option_window(WindowHandle),
 	{ok, State#{window := none}};
 handle_event(stop_input, State) ->

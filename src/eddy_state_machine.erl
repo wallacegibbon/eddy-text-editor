@@ -22,10 +22,12 @@
 -type state_data() ::
 	keys_and_word_options() | map_index() | command_mode_data().
 
+
 -spec handle_event(cast, eddy_keystroke:key(), eddy_mode(), state_data())
 	-> {next_state, eddy_mode(), state_data()}.
+
 handle_event(cast, command_key, State, Data)
-		when State =/= wait_command_1, State =/= wait_command_2 ->
+	when State =/= wait_command_1, State =/= wait_command_2 ->
 	{next_state, wait_command_1, {[command], State, Data}};
 %% In command state (wait_command_1 or wait_command_2),
 %% clicking on the command key again will reset the state to wait_command_1
@@ -64,7 +66,7 @@ handle_event(cast, Key, t9_start, _) when Key >= $2, Key =< $9 ->
 handle_event(cast, $\b, t9_start, Data) ->
 	{next_state, t9_start, Data};
 handle_event(cast, Key, t9_insert, {CollectedKeys, _})
-		when Key >= $2, Key =< $9 ->
+	when Key >= $2, Key =< $9 ->
 	Keys = [Key | CollectedKeys],
 	Options = eddy_t9_translator:query(lists:reverse(Keys)),
 	sync_word_options(Options, Keys),
@@ -77,7 +79,7 @@ handle_event(cast, $1, t9_insert, {[], []} = Data) ->
 	{next_state, t9_insert, Data};
 %% when the word is selected, empty the word list and options
 handle_event(cast, Key, t9_insert, {_, [Word | _]})
-		when Key =:= $\s; Key =:= $\n ->
+	when Key =:= $\s; Key =:= $\n ->
 	eddy_edit_event:publish({insert_str, Word}),
 	eddy_edit_event:publish(stop_input),
 	eddy_t9_translator:freq_count(list_to_binary(Word)),
@@ -85,7 +87,7 @@ handle_event(cast, Key, t9_insert, {_, [Word | _]})
 handle_event(cast, $\b, t9_insert, {[], _}) ->
 	{next_state, t9_start, {[], []}};
 handle_event(cast, $\b, State, Data)
-		when State =/= t9_insert, State =/= t9_start ->
+	when State =/= t9_insert, State =/= t9_start ->
 	eddy_edit_event:publish(del_char),
 	{next_state, State, Data};
 handle_event(cast, $\b, t9_insert, {[_], _}) ->

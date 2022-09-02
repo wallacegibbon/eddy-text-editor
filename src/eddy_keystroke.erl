@@ -43,20 +43,28 @@
 	$1 => $$, $2 => $`, $\n => $\n, $\b => $\b
 }).
 
+
 -spec pre_translate(char()) -> {ok, key()} | error.
+
 pre_translate(C) ->
 	maps:find(lowercase(C), ?BASEMAP).
 
+
 %% Commands in eddy are all 2-keystroke
 -spec translate_command(char(), char()) -> atom().
+
 translate_command(Key1, Key2) ->
 	maps:get([Key1, Key2], ?COMMANDS, unknown).
 
+
 -spec translate_key(char(), integer()) -> char().
+
 translate_key(Key, KeyMapIndex) ->
 	maps:get(Key, map_on_index(KeyMapIndex), $\s).
 
+
 -spec map_on_index(integer()) -> #{char() => char()}.
+
 map_on_index(1) -> ?MAP1;
 map_on_index(2) -> ?MAP2;
 map_on_index(3) -> ?MAP3;
@@ -64,7 +72,9 @@ map_on_index(4) -> ?MAP4;
 map_on_index(5) -> ?MAP5;
 map_on_index(_) -> #{}.
 
+
 -spec lowercase(char()) -> char().
+
 lowercase(C) when C >= $A, C =< $Z ->
 	C - $A + $a;
 lowercase(C) ->
