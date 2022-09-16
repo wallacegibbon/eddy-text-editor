@@ -24,7 +24,10 @@
 
 
 -spec handle_event(cast, eddy_keystroke:key(), eddy_mode(), state_data())
-	-> {next_state, eddy_mode(), state_data()}.
+	->
+		{next_state, eddy_mode(), state_data()} |
+		{keep_state, state_data()} |
+		keep_state_and_data.
 
 handle_event(cast, command_key, State, Data)
 	when State =/= wait_command_1, State =/= wait_command_2 ->
@@ -50,13 +53,13 @@ handle_event(cast, Key, change_map, _) when Key >= $1, Key =< $9 ->
 	eddy_edit_event:publish(stop_input),
 	{next_state, direct_insert, Key - $0};
 handle_event(cast, _, change_map, Data) ->
-	{next_state, change_map, Data};
+	keep_state_and_data;
 %% In direct-insert mode, the data is just an integer (key map index)
 handle_event(cast, Key, direct_insert, MapIndex) ->
 	eddy_edit_event:publish(
 		{insert_str, [eddy_keystroke:translate_key(Key, MapIndex)]}
 	),
-	{next_state, direct_insert, MapIndex};
+	keep_state_and_data;
 %% The t9 input method logic
 handle_event(cast, Key, t9_start, _) when Key >= $2, Key =< $9 ->
 	eddy_edit_event:publish(start_input),
@@ -64,19 +67,19 @@ handle_event(cast, Key, t9_start, _) when Key >= $2, Key =< $9 ->
 	sync_word_options(Options, [Key]),
 	{next_state, t9_insert, {[Key], Options}};
 handle_event(cast, $\b, t9_start, Data) ->
-	{next_state, t9_start, Data};
+	keep_state_and_data;
 handle_event(cast, Key, t9_insert, {CollectedKeys, _})
 	when Key >= $2, Key =< $9 ->
 	Keys = [Key | CollectedKeys],
 	Options = eddy_t9_translator:query(lists:reverse(Keys)),
 	sync_word_options(Options, Keys),
-	{next_state, t9_insert, {Keys, Options}};
+	{keep_state, {Keys, Options}};
 handle_event(cast, $1, t9_insert, {Keys, [W | RestWords]}) ->
 	Options = RestWords ++ [W],
 	sync_word_options(Options, Keys),
-	{next_state, t9_insert, {Keys, Options}};
+	{keep_state, {Keys, Options}};
 handle_event(cast, $1, t9_insert, {[], []} = Data) ->
-	{next_state, t9_insert, Data};
+	keep_state_and_data;
 %% when the word is selected, empty the word list and options
 handle_event(cast, Key, t9_insert, {_, [Word | _]})
 	when Key =:= $\s; Key =:= $\n ->
@@ -96,7 +99,7 @@ handle_event(cast, $\b, t9_insert, {[_], _}) ->
 handle_event(cast, $\b, t9_insert, {[_ | Keys], _}) ->
 	Options = eddy_t9_translator:query(lists:reverse(Keys)),
 	sync_word_options(Options, Keys),
-	{next_state, t9_insert, {Keys, Options}};
+	{keep_state, {Keys, Options}};
 %% In other cases, space and newline key stands for themselves
 handle_event(cast, Key, State, Data) when Key =:= $\s; Key =:= $\n ->
 	eddy_edit_event:publish({insert_str, [Key]}),
