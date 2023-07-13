@@ -10,16 +10,10 @@
 -define(WINDOW_COLUMNS, 22).
 
 %% when no words are found, show the keys directly
-handle_event(
-	{word_options, {[], Keys}},
-	#{window := WindowHandle} = State
-) ->
+handle_event({word_options, {[], Keys}}, #{window := WindowHandle} = State) ->
 	draw_word_options([Keys], WindowHandle),
 	{ok, State};
-handle_event(
-	{word_options, {Options, _}},
-	#{window := WindowHandle} = State
-) ->
+handle_event({word_options, {Options, _}}, #{window := WindowHandle} = State) ->
 	draw_word_options(Options, WindowHandle),
 	{ok, State};
 handle_event({insert_str, String}, State) ->
@@ -28,8 +22,7 @@ handle_event({insert_str, String}, State) ->
 	{ok, State};
 handle_event(start_input, State) ->
 	{ok, State#{window => new_option_window()}};
-handle_event(stop_input, #{window := WindowHandle} = State)
-	when WindowHandle =/= none ->
+handle_event(stop_input, #{window := WindowHandle} = State) when WindowHandle =/= none ->
 	del_option_window(WindowHandle),
 	{ok, State#{window := none}};
 handle_event(stop_input, State) ->

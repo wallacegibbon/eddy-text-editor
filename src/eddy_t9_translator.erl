@@ -28,31 +28,18 @@
 -define(FREQUENCY_FILE, "./frequency.dat").
 -define(FREQ_MAP_SAVE_PERIOD, 10000).
 
-handle_call(
-	{query, Keys},
-	_From,
-	#{word_dict := WordDict, word_freq_map := FreqMap} = State
-) ->
+handle_call({query, Keys}, _From, #{word_dict := WordDict, word_freq_map := FreqMap} = State) ->
 	{reply, find_words(Keys, WordDict, FreqMap), State}.
 
-handle_cast(
-	{use, Word},
-	#{word_freq_map := FreqMap} = State
-) ->
+handle_cast({use, Word}, #{word_freq_map := FreqMap} = State) ->
 	NewFreqMap = maps:update_with(Word, fun (V) -> V + 1 end, 1, FreqMap),
 	{noreply, State#{word_freq_map := NewFreqMap, freq_changed := true}}.
 
-handle_info(
-	save_freq_map,
-	#{word_freq_map := FreqMap, freq_changed := true} = State
-) ->
+handle_info(save_freq_map, #{word_freq_map := FreqMap, freq_changed := true} = State) ->
 	dump_frequency(FreqMap),
 	erlang:send_after(?FREQ_MAP_SAVE_PERIOD, ?SERVER, save_freq_map),
 	{noreply, State#{freq_changed := false}};
-handle_info(
-	save_freq_map,
-	#{freq_changed := false} = State
-) ->
+handle_info(save_freq_map, #{freq_changed := false} = State) ->
 	erlang:send_after(?FREQ_MAP_SAVE_PERIOD, ?SERVER, save_freq_map),
 	{noreply, State};
 handle_info(_, State) ->
@@ -66,11 +53,7 @@ init([]) ->
 	erlang:send_after(?FREQ_MAP_SAVE_PERIOD, ?SERVER, save_freq_map),
 	{ok, WordRowsText} = file:read_file(?WORDS_FILE),
 	WordDict = mk_word_dictionary(WordRowsText, []),
-	{ok, #{
-		word_dict => WordDict,
-		word_freq_map => load_freq_map(),
-		freq_changed => false
-	}}.
+	{ok, #{word_dict => WordDict, word_freq_map => load_freq_map(), freq_changed => false}}.
 
 start_link() ->
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -122,8 +105,7 @@ get_one_word(<<>>, _) ->
 	nothing.
 
 %% Non-ascii words will be ignored
--spec mk_word_dictionary(binary(), Result)
-	-> Result when Result :: word_dict().
+-spec mk_word_dictionary(binary(), Result) -> Result when Result :: word_dict().
 mk_word_dictionary(WordRows, Result) ->
 	case get_one_word(WordRows, []) of
 	{Cs, Rest} ->
@@ -179,33 +161,26 @@ dump_frequency(FreqMap) ->
 find_words([], _, _) ->
 	[];
 find_words(Keys, WordDict, FreqMap) ->
-	CandidateList = [
-		Word || {WordKeys, Word} <- WordDict,
-		match_keys(Keys, WordKeys)
-	],
+	CandidateList = [Word || {WordKeys, Word} <- WordDict, match_keys(Keys, WordKeys)],
 	prepare_result(CandidateList, FreqMap).
+
+-spec sort_by_byte_size(binary(), binary()) -> boolean.
+sort_by_byte_size(A, B) when byte_size(A) =/= byte_size(B) ->
+	byte_size(A) =< byte_size(B);
+sort_by_byte_size(_, _) ->
+	true.
+
+-spec sort_by_frequency(binary(), binary(), word_freq_map()) -> boolean.
+sort_by_frequency(A, B, FreqMap) when byte_size(A) =:= byte_size(B) ->
+	compare_frequency(A, B, FreqMap);
+sort_by_frequency(_, _, _) ->
+	true.
 
 -spec prepare_result([binary()], word_freq_map()) -> [string()].
 prepare_result(WordCandidateList, FreqMap) ->
-	R1 = lists:sort(
-		fun
-		(A, B) when byte_size(A) =/= byte_size(B) ->
-			byte_size(A) =< byte_size(B);
-		(_, _) ->
-			true
-		end,
-		WordCandidateList
-	),
+	R1 = lists:sort(fun sort_by_byte_size/2, WordCandidateList),
 	R2 = lists:sublist(R1, 10),
-	R3 = lists:sort(
-		fun
-		(A, B) when byte_size(A) =:= byte_size(B) ->
-			compare_frequency(A, B, FreqMap);
-		(_, _) ->
-			true
-		end,
-		R2
-	),
+	R3 = lists:sort(fun (A, B) -> sort_by_frequency(A, B, FreqMap) end, R2),
 	R4 = lists:map(fun binary_to_list/1, R3),
 	R4.
 
