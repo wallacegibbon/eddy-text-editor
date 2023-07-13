@@ -18,9 +18,7 @@
 }.
 
 -type map_index() :: integer().
-
--type state_data() ::
-	keys_and_word_options() | map_index() | command_mode_data().
+-type state_data() :: keys_and_word_options() | map_index() | command_mode_data().
 
 
 -spec handle_event(cast, eddy_keystroke:key(), eddy_mode(), state_data())

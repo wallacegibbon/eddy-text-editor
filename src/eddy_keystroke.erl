@@ -71,8 +71,6 @@ map_on_index(_) -> #{}.
 
 -spec lowercase(char()) -> char().
 
-lowercase(C) when C >= $A, C =< $Z ->
-	C - $A + $a;
-lowercase(C) ->
-	C.
+lowercase(C) when C >= $A, C =< $Z -> C - $A + $a;
+lowercase(C) -> C.
 
