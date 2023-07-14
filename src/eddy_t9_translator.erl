@@ -164,13 +164,13 @@ find_words(Keys, WordDict, FreqMap) ->
 	CandidateList = [Word || {WordKeys, Word} <- WordDict, match_keys(Keys, WordKeys)],
 	prepare_result(CandidateList, FreqMap).
 
--spec sort_by_byte_size(binary(), binary()) -> boolean.
+-spec sort_by_byte_size(binary(), binary()) -> boolean().
 sort_by_byte_size(A, B) when byte_size(A) =/= byte_size(B) ->
 	byte_size(A) =< byte_size(B);
 sort_by_byte_size(_, _) ->
 	true.
 
--spec sort_by_frequency(binary(), binary(), word_freq_map()) -> boolean.
+-spec sort_by_frequency(binary(), binary(), word_freq_map()) -> boolean().
 sort_by_frequency(A, B, FreqMap) when byte_size(A) =:= byte_size(B) ->
 	compare_frequency(A, B, FreqMap);
 sort_by_frequency(_, _, _) ->
