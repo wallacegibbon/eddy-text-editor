@@ -1,5 +1,5 @@
 #! /bin/sh
 
-#erl -noinput -pa ../eddy/_build/default/lib/cecho/ebin ../eddy/_build/default/lib/eddy/ebin -s eddy start -s init stop
-erl -noinput -pa ../eddy/_build/default/lib/cecho/ebin ../eddy/_build/default/lib/eddy/ebin -s eddy start
+#erl -noinput -pa ./_build/default/lib/cecho/ebin ./_build/default/lib/eddy/ebin -s eddy start -s init stop
+erl -noinput -pa ./_build/default/lib/cecho/ebin ./_build/default/lib/eddy/ebin -s eddy start
 
