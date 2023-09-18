@@ -38,7 +38,7 @@ handle_event(cast, change_map_key, _, Data) ->
 handle_event(cast, Key, change_map, _) when Key >= $1, Key =< $9 ->
   eddy_edit_event:publish(stop_input),
   {next_state, direct_insert, Key - $0};
-handle_event(cast, _, change_map, Data) ->
+handle_event(cast, _, change_map, _) ->
   keep_state_and_data;
 %% In direct-insert mode, the data is just an integer (key map index)
 handle_event(cast, Key, direct_insert, MapIndex) ->
@@ -50,7 +50,7 @@ handle_event(cast, Key, t9_start, _) when Key >= $2, Key =< $9 ->
   Options = eddy_t9_translator:query([Key]),
   sync_word_options(Options, [Key]),
   {next_state, t9_insert, {[Key], Options}};
-handle_event(cast, $\b, t9_start, Data) ->
+handle_event(cast, $\b, t9_start, _) ->
   keep_state_and_data;
 handle_event(cast, Key, t9_insert, {CollectedKeys, _}) when Key >= $2, Key =< $9 ->
   Keys = [Key | CollectedKeys],
@@ -63,7 +63,7 @@ handle_event(cast, $1, t9_insert, {Keys, [W | RestWords]}) ->
   Options = RestWords ++ [W],
   sync_word_options(Options, Keys),
   {keep_state, {Keys, Options}};
-handle_event(cast, $1, t9_insert, {[], []} = Data) ->
+handle_event(cast, $1, t9_insert, {[], []}) ->
   keep_state_and_data;
 %% when the word is selected, empty the word list and options
 handle_event(cast, Key, t9_insert, {_, [Word | _]}) when Key =:= $\s; Key =:= $\n ->

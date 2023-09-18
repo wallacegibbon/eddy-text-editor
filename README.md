@@ -103,3 +103,10 @@ e.g.
 45 => save_and_quit
 ```
 
+## Dependencies
+
+Use a proxy to download dependencies:
+
+```sh
+http_proxy=socks5://127.0.0.1:1089 rebar3 compile
+```
