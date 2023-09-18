@@ -72,7 +72,7 @@ stop() ->
 
 %% In the T9 input method:
 %% 2 --> ABC        3 --> DEF        4 --> GHI        5 --> JKL        6 --> MNO,
-%% 7 --> PQRS        8 --> TUV        9 --> WXYZ
+%% 7 --> PQRS       8 --> TUV        9 --> WXYZ
 -spec chars_to_keys([char()]) -> [t9_key_stroke()].
 chars_to_keys(CharList) ->
   lists:map(fun char_to_key_unify_case/1, CharList).
