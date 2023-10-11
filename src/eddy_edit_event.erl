@@ -5,13 +5,13 @@
 -define(SERVER, ?MODULE).
 
 start() ->
-  gen_event:start({local, ?SERVER}).
+    gen_event:start({local, ?SERVER}).
 
 add_handler(Handler) ->
-  gen_event:add_handler(?SERVER, Handler, []).
+    gen_event:add_handler(?SERVER, Handler, []).
 
 delete_handler(Handler) ->
-  gen_event:delete_handler(?SERVER, Handler, []).
+    gen_event:delete_handler(?SERVER, Handler, []).
 
 publish(Message) ->
-  gen_event:notify(?SERVER, Message).
+    gen_event:notify(?SERVER, Message).
