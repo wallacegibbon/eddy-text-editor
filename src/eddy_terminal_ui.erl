@@ -2,8 +2,8 @@
 -export([init/1, handle_event/2, handle_call/2, terminate/2]).
 -behaviour(gen_event).
 
--type window_handle() :: any() | none.
--type state() :: #{window => window_handle()}.
+-type window_handle()			:: any() | none.
+-type state()				:: #{window => window_handle()}.
 
 -define(WINDOW_ROWS, 8).
 -define(WINDOW_COLUMNS, 22).

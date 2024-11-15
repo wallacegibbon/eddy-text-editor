@@ -2,7 +2,7 @@
 
 A modal text editor (like vi) with built-in T9 input method. You need only 3 fingers to write programs!
 
-(Still under developing...)
+(This project had been paused before the author got time to continue it...)
 
 
 ## T9 Input Method

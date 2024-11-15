@@ -4,11 +4,11 @@
 
 -define(SERVER, ?MODULE).
 
--type eddy_mode() :: t9_start | t9_insert | change_map | wait_command_1 | wait_command_2.
--type keys_and_word_options() :: {Keys :: [eddy_keystroke:key()], Options :: [string()]}.
--type command_mode_data() :: {Keys :: [eddy_keystroke:key()], PrevState :: eddy_mode(), PrevData :: state_data()}.
--type map_index() :: integer().
--type state_data() :: keys_and_word_options() | map_index() | command_mode_data().
+-type eddy_mode()			:: t9_start | t9_insert | change_map | wait_command_1 | wait_command_2.
+-type command_mode_data()		:: {Keys :: [eddy_keystroke:key()], PrevState :: eddy_mode(), PrevData :: state_data()}.
+-type map_index()			:: integer().
+-type keys_and_word_options()		:: {Keys :: [eddy_keystroke:key()], Options :: [string()]}.
+-type state_data()			:: keys_and_word_options() | map_index() | command_mode_data().
 
 -spec handle_event(cast, eddy_keystroke:key(), eddy_mode(), state_data()) ->
 	{next_state, eddy_mode(), state_data()} | {keep_state, state_data()} | keep_state_and_data.
